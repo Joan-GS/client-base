@@ -48,6 +48,7 @@ import { Link } from "@/src/components/ui/link";
 import { authState } from "@/src/recoil/users.recoil";
 import { useTranslation } from "react-i18next";
 import { useSetRecoilState } from "recoil";
+import { Pressable } from "@/src/components/ui/pressable";
 
 // Validation schema for login form using yup
 const loginSchema = yup.object().shape({
@@ -222,11 +223,11 @@ const LoginWithLeftBackground = () => {
       {/* Sign-up prompt */}
       <SignUpContainer>
         <Text>{t("Don't have an account?")}</Text>
-        <Link href="/auth/signup">
+        <Pressable onPress={() => router.push("/auth/signup")}>
           <LinkText className="font-medium text-primary-700">
             {t("Sign up")}{" "}
           </LinkText>
-        </Link>
+        </Pressable>
       </SignUpContainer>
     </LoginWithLeftBackgroundContainer>
   );
