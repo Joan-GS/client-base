@@ -21,7 +21,7 @@ export const LoginWithLeftBackgroundContainer = styled(View, {
 
 // Contenedor de textos (centrado)
 export const LoginTextsContainer = styled(View, {
-  marginBottom: 32,
+  paddingBottom: 32,
   alignItems: "center",
 });
 

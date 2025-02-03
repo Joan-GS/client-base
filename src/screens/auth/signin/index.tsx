@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { useSetRecoilState } from "recoil";
 import { router } from "expo-router";
 import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
 import { Heading } from "@/src/components/ui/heading";
@@ -40,7 +39,7 @@ import {
   HStackContainer,
   SignUpContainer,
   // LogoImage,
-} from "./styles";  // Add LogoImage to your styles
+} from "./styles"; // Add LogoImage to your styles
 
 import { loginUser } from "./api/login";
 import { AuthLayout } from "../layout";
@@ -48,6 +47,7 @@ import { ButtonIcon, ButtonText } from "@/src/components/ui/button";
 import { Link } from "@/src/components/ui/link";
 import { authState } from "@/src/recoil/users.recoil";
 import { useTranslation } from "react-i18next";
+import { useSetRecoilState } from "recoil";
 
 // Validation schema for login form using yup
 const loginSchema = yup.object().shape({
@@ -97,7 +97,7 @@ const LoginWithLeftBackground = () => {
 
       reset();
       // Redirect user to the dashboard
-      router.push("/dashboard/dashboard-layout");
+      // router.push("/dashboard/dashboard-layout");
     } catch (error) {
       // Show error toast message if login fails
       toast.show({
@@ -201,7 +201,9 @@ const LoginWithLeftBackground = () => {
           />
           {/* Forgot password link */}
           <Link href="/auth/forgot-password">
-            <LinkText>{t("Forgot Password?")}</LinkText>
+            <LinkText className="font-medium text-primary-700">
+              {t("Forgot Password?")}{" "}
+            </LinkText>
           </Link>
         </HStackContainer>
       </FormsContainer>
@@ -221,7 +223,9 @@ const LoginWithLeftBackground = () => {
       <SignUpContainer>
         <Text>{t("Don't have an account?")}</Text>
         <Link href="/auth/signup">
-          <LinkText bold>{t("Sign up")}</LinkText>
+          <LinkText className="font-medium text-primary-700">
+            {t("Sign up")}{" "}
+          </LinkText>
         </Link>
       </SignUpContainer>
     </LoginWithLeftBackgroundContainer>
