@@ -7,7 +7,12 @@ import { router } from "expo-router";
 import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
 import { Heading } from "@/src/components/ui/heading";
 import { Text } from "@/src/components/ui/text";
-import { Input, InputField, InputIcon, InputSlot } from "@/src/components/ui/input";
+import {
+  Input,
+  InputField,
+  InputIcon,
+  InputSlot,
+} from "@/src/components/ui/input";
 import {
   FormControl,
   FormControlError,
@@ -24,7 +29,7 @@ import {
 } from "@/src/components/ui/checkbox";
 import { GoogleIcon } from "./assets/icons/google";
 
-// Import styles
+// Import styles and logo
 import {
   FormsContainer,
   LoginTextsContainer,
@@ -34,7 +39,9 @@ import {
   VStackContainer,
   HStackContainer,
   SignUpContainer,
-} from "./styles";
+  // LogoImage,
+} from "./styles";  // Add LogoImage to your styles
+
 import { loginUser } from "./api/login";
 import { AuthLayout } from "../layout";
 import { ButtonIcon, ButtonText } from "@/src/components/ui/button";
@@ -42,7 +49,7 @@ import { Link } from "@/src/components/ui/link";
 import { authState } from "@/src/recoil/users.recoil";
 import { useTranslation } from "react-i18next";
 
-// Esquema de validación de login
+// Validation schema for login form using yup
 const loginSchema = yup.object().shape({
   email: yup.string().email("Invalid email").required("Email is required"),
   password: yup.string().required("Password is required"),
@@ -67,18 +74,19 @@ const LoginWithLeftBackground = () => {
 
   const { t } = useTranslation();
 
-
+  // Submit form handler
   const onSubmit = async (data: LoginSchemaType) => {
     try {
+      // Attempt login with credentials
       const response = await loginUser(data.email, data.password);
 
-      // Guardar el token en el estado global de Recoil
+      // Store authentication token in global state (Recoil)
       setAuthState({
         token: response.access_token ?? null,
         isAuthenticated: true,
       });
 
-      // Mostrar mensaje de éxito
+      // Show success toast message
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="success">
@@ -88,10 +96,10 @@ const LoginWithLeftBackground = () => {
       });
 
       reset();
-      // Redirigir al usuario al dashboard
+      // Redirect user to the dashboard
       router.push("/dashboard/dashboard-layout");
     } catch (error) {
-      // Mostrar mensaje de error
+      // Show error toast message if login fails
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
@@ -104,12 +112,18 @@ const LoginWithLeftBackground = () => {
 
   return (
     <LoginWithLeftBackgroundContainer>
+      {/* Logo - will display on small screens */}
+      {/* <LogoImage source={require("@/src/assets/images/splash-icon.png")} alt="Logo" /> */}
+
+      {/* Login text section */}
       <LoginTextsContainer>
         <Heading size="3xl">{t("Log in")}</Heading>
         <Text>{t("Login to start using gluestack")}</Text>
       </LoginTextsContainer>
 
+      {/* Login form */}
       <FormsContainer>
+        {/* Email input */}
         <FormControl isInvalid={!!errors.email}>
           <FormControlLabel>
             <FormControlLabelText>{t("Email")}</FormControlLabelText>
@@ -132,6 +146,7 @@ const LoginWithLeftBackground = () => {
           )}
         </FormControl>
 
+        {/* Password input */}
         <FormControl isInvalid={!!errors.password}>
           <FormControlLabel>
             <FormControlLabelText>{t("Password")}</FormControlLabelText>
@@ -164,6 +179,7 @@ const LoginWithLeftBackground = () => {
           )}
         </FormControl>
 
+        {/* Remember me checkbox */}
         <HStackContainer>
           <Controller
             name="rememberme"
@@ -183,12 +199,14 @@ const LoginWithLeftBackground = () => {
               </Checkbox>
             )}
           />
+          {/* Forgot password link */}
           <Link href="/auth/forgot-password">
             <LinkText>{t("Forgot Password?")}</LinkText>
           </Link>
         </HStackContainer>
       </FormsContainer>
 
+      {/* Action buttons */}
       <VStackContainer>
         <Button onPress={handleSubmit(onSubmit)}>
           <ButtonText>{t("Log in")}</ButtonText>
@@ -199,6 +217,7 @@ const LoginWithLeftBackground = () => {
         </Button>
       </VStackContainer>
 
+      {/* Sign-up prompt */}
       <SignUpContainer>
         <Text>{t("Don't have an account?")}</Text>
         <Link href="/auth/signup">
@@ -209,6 +228,7 @@ const LoginWithLeftBackground = () => {
   );
 };
 
+// Wrapping the login component inside the AuthLayout
 export const SignIn = () => (
   <AuthLayout>
     <LoginWithLeftBackground />

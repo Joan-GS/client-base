@@ -5,6 +5,7 @@ import { LinkText as UILinkText } from "@/src/components/ui/link";
 import { View } from "@/src/components/ui/view";
 import { HStack } from "@/src/components/ui/hstack";
 import { VStack } from "@/src/components/ui/vstack";
+import { Image } from "@/src/components/ui/image";
 
 // ------------ CONTAINERS ------------
 
@@ -74,3 +75,15 @@ export const LinkText = styled(UILinkText, {
   fontWeight: "600", // Corresponde a font-medium
   textDecorationLine: "underline", // Para subrayado
 });
+
+
+// ------------ LOGO IMAGE ------------
+
+// Estilo para la imagen del logo
+// export const LogoImage = styled(Image, {
+//   width: 100, // Tamaño del logo
+//   height: 100, // Mantener la proporción de la imagen
+//   display: "flex", // Mostrar la imagen
+//   alignSelf: "center", // Centrar la imagen
+//   paddingBottom: 10, // Posición superior
+// });
