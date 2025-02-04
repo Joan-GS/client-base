@@ -50,13 +50,13 @@ const index = () => {
         >
           <ButtonText>Dashboard</ButtonText>
         </Button>
-        {/* <Button
+        <Button
           onPress={() => {
             router.push("/profile/profile");
           }}
         >
           <ButtonText>Profile</ButtonText>
-        </Button> */}
+        </Button>
       </VStack>
     </SafeAreaView>
   );

@@ -9,12 +9,16 @@ import { Sidebar } from "@/src/shared/ui/organism/Sidebar";
 import { WebHeader } from "@/src/shared/ui/organism/WebHeader/WebHeader";
 import { useMediaQuery } from "@gluestack-style/react";
 import { Href } from "expo-router";
-import { GlobeIcon, HeartIcon, HomeIcon, InboxIcon } from "lucide-react-native";
+import {
+  HomeIcon,
+  UserIcon,
+} from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface DashboardLayoutProps {
   title: string;
+  isHeaderVisible: boolean;
   isSidebarVisible: boolean;
   children: React.ReactNode;
 }
@@ -29,6 +33,7 @@ const MainContent = () => {
 export const DashboardLayout = ({
   title,
   isSidebarVisible,
+  isHeaderVisible,
   children,
 }: DashboardLayoutProps) => {
   // State to manage sidebar visibility
@@ -51,26 +56,16 @@ export const DashboardLayout = ({
       route: "/dashboard/dashboard-layout" as Href,
     },
     {
-      iconText: t("Community"),
-      iconName: () => <GlobeIcon size={24} color="black" />,
-      route: "" as Href,
-    },
-    {
-      iconText: t("Inbox"),
-      iconName: () => <InboxIcon size={24} color="black" />,
-      route: "/dashboard/dashboard-layout" as Href,
-    },
-    {
-      iconText: t("Favourite"),
-      iconName: () => <HeartIcon size={24} color="black" />,
-      route: "/dashboard/dashboard-layout" as Href,
+      iconText: t("Profile"),
+      iconName: () => <UserIcon size={24} color="black" />,
+      route: "/profile/profile" as Href,
     },
   ];
 
   return (
     <VStack className="h-full w-full bg-background-0">
       {/* Show mobile header on small screens */}
-      {isMediumScreen && (
+      {isMediumScreen && isHeaderVisible && (
         <Box className="md:hidden">
           <MobileHeader title={title} />
         </Box>
@@ -104,7 +99,11 @@ export const DashboardLayout = ({
 export const Dashboard = () => {
   return (
     <SafeAreaView className="h-full w-full">
-      <DashboardLayout title="Dashboard" isSidebarVisible={true}>
+      <DashboardLayout
+        title="Dashboard"
+        isSidebarVisible={true}
+        isHeaderVisible={true}
+      >
         <MainContent />
       </DashboardLayout>
     </SafeAreaView>
