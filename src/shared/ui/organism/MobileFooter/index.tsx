@@ -8,10 +8,10 @@ import {
 import React, { useState } from "react";
 
 interface MobileFooterProps {
-  footerIcons: { iconText: string; iconName: any; route: Href }[];
+  tabs: { iconText: string; iconName: any; route: Href }[];
 }
 
-export const MobileFooter = ({ footerIcons }: MobileFooterProps) => {
+export const MobileFooter = ({ tabs }: MobileFooterProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const currentPath = usePathname();
 
@@ -24,7 +24,7 @@ export const MobileFooter = ({ footerIcons }: MobileFooterProps) => {
 
   return (
     <FooterContainer>
-      {footerIcons.map((item, index) => (
+      {tabs.map((item, index) => (
         <FooterButton
           key={index}
           onPress={() => handlePress(index, item.route)}

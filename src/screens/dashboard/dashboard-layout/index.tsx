@@ -5,7 +5,7 @@ import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
 import { MobileFooter } from "@/src/shared/ui/organism/MobileFooter";
 import { MobileHeader } from "@/src/shared/ui/organism/MobileHeader";
-import { Sidebar } from "@/src/shared/ui/organism/Sidebar/Sidebar";
+import { Sidebar } from "@/src/shared/ui/organism/Sidebar";
 import { WebHeader } from "@/src/shared/ui/organism/WebHeader/WebHeader";
 import { useMediaQuery } from "@gluestack-style/react";
 import { Href } from "expo-router";
@@ -34,7 +34,7 @@ const MainContent = () => {
 };
 
 // Ejemplo de definición de bottomTabsList
-const bottomTabsList = [
+const tabsList = [
   {
     iconText: "Home",
     iconName: () => <HomeIcon size={24} color="black" />,
@@ -85,12 +85,12 @@ export const DashboardLayout = ({
       <VStack className="h-full w-full">
         <HStack className="h-full w-full">
           <Box className="hidden md:flex h-full">
-            {isSidebarVisibleState && <Sidebar />}
+            {isSidebarVisibleState && <Sidebar tabs={tabsList} />}
           </Box>
           <VStack className="w-full">{children}</VStack>
         </HStack>
       </VStack>
-      {isMediumScreen && <MobileFooter footerIcons={bottomTabsList} />}
+      {isMediumScreen && <MobileFooter tabs={tabsList} />}
     </VStack>
   );
 };
