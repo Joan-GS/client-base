@@ -98,7 +98,7 @@ export const DashboardLayout = ({
 export const Dashboard = () => {
   return (
     <SafeAreaView className="h-full w-full">
-      <DashboardLayout title="Dashboard" isSidebarVisible={false}>
+      <DashboardLayout title="Dashboard" isSidebarVisible={true}>
         <MainContent />
       </DashboardLayout>
     </SafeAreaView>
