@@ -1,15 +1,14 @@
-// Importaciones de componentes y módulos
 import { styled } from "@gluestack-style/react";
 import { Button as UIButton } from "@/src/components/ui/button";
 import { LinkText as UILinkText } from "@/src/components/ui/link";
 import { View } from "@/src/components/ui/view";
 import { HStack } from "@/src/components/ui/hstack";
 import { VStack } from "@/src/components/ui/vstack";
-import { Image } from "@/src/components/ui/image";
+// import { Image } from "@/src/components/ui/image";
 
 // ------------ CONTAINERS ------------
 
-// Contenedor principal con fondo izquierdo
+// Main container with a left background
 export const LoginWithLeftBackgroundContainer = styled(View, {
   display: "flex",
   flexDirection: "column",
@@ -19,13 +18,13 @@ export const LoginWithLeftBackgroundContainer = styled(View, {
   flex: 1,
 });
 
-// Contenedor de textos (centrado)
+// Text container (centered)
 export const LoginTextsContainer = styled(View, {
   paddingBottom: 32,
   alignItems: "center",
 });
 
-// Contenedor del formulario
+// Form container
 export const FormsContainer = styled(View, {
   gap: 20,
   width: "100%",
@@ -33,14 +32,14 @@ export const FormsContainer = styled(View, {
 
 // ------------ HORIZONTAL STACKS (HStack) ------------
 
-// Contenedor de opciones con alineación entre checkbox y links
+// Container for options (aligning checkbox and links)
 export const HStackContainer = styled(HStack, {
   justifyContent: "space-between",
   alignItems: "center",
   width: "100%",
 });
 
-// Contenedor secundario para enlaces y otras opciones centradas
+// Secondary container for centered links and other options
 export const SignUpContainer = styled(HStack, {
   alignItems: "center",
   alignSelf: "center",
@@ -50,7 +49,7 @@ export const SignUpContainer = styled(HStack, {
 
 // ------------ VERTICAL STACKS (VStack) ------------
 
-// Contenedor de botones y opciones adicionales
+// Container for buttons and additional options
 export const VStackContainer = styled(VStack, {
   marginTop: 24,
   gap: 16,
@@ -58,7 +57,7 @@ export const VStackContainer = styled(VStack, {
 
 // ------------ BUTTONS ------------
 
-// Estilo para el botón
+// Button style
 export const Button = styled(UIButton, {
   width: "100%",
   height: 50,
@@ -69,21 +68,21 @@ export const Button = styled(UIButton, {
 
 // ------------ TEXT STYLES ------------
 
-// Estilos para el texto del link
+// Link text styles
 export const LinkText = styled(UILinkText, {
-  fontSize: 14, // Corresponde a text-sm
-  fontWeight: "600", // Corresponde a font-medium
-  textDecorationLine: "underline", // Para subrayado
+  fontSize: 14, // Equivalent to text-sm
+  fontWeight: "600", // Equivalent to font-medium
+  textDecorationLine: "underline", // Adds underline to text
 });
-
 
 // ------------ LOGO IMAGE ------------
 
-// Estilo para la imagen del logo
+// Style for the logo image
 // export const LogoImage = styled(Image, {
-//   width: 100, // Tamaño del logo
-//   height: 100, // Mantener la proporción de la imagen
-//   display: "flex", // Mostrar la imagen
-//   alignSelf: "center", // Centrar la imagen
-//   paddingBottom: 10, // Posición superior
+//   width: 100, // Logo size
+//   height: 100, // Maintain image proportions
+//   display: "flex", // Ensure the image is displayed
+//   alignSelf: "center", // Center the image
+//   paddingBottom: 10, // Adjust top position
 // });
+

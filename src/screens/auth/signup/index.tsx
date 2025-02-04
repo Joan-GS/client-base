@@ -132,9 +132,8 @@ const SignUpWithLeftBackground = () => {
           </Toast>
         ),
       });
-      reset();
       // Redirect user to the dashboard
-      //   router.push("/dashboard/dashboard-layout");
+      router.push("/dashboard/dashboard-layout");
     } catch (error) {
       // Show error toast message if login fails
       toast.show({

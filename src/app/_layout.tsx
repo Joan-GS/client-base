@@ -14,6 +14,7 @@ import { GluestackUIProvider } from "../components/ui/gluestack-ui-provider";
 import { useColorScheme } from "../components/useColorScheme";
 import { RecoilRoot } from "recoil";
 
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -56,7 +57,7 @@ function RootLayoutNav() {
 
   return (
     <RecoilRoot>
-      <GluestackUIProvider mode={"light"}>
+      <GluestackUIProvider mode={"light"} >
         <ThemeProvider value={DefaultTheme}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="signin" />

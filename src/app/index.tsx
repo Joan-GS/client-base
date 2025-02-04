@@ -7,13 +7,13 @@ const index = () => {
   return (
     <SafeAreaView className="md:flex flex-col items-center justify-center md:w-full h-full">
       <VStack className="p-2 md:max-w-[440px] w-full" space="xl">
-        <Button
+        {/* <Button
           onPress={() => {
             router.push("/auth/splash-screen");
           }}
         >
           <ButtonText>SplashScreen</ButtonText>
-        </Button>
+        </Button> */}
         <Button
           className="w-full"
           onPress={() => {
@@ -29,20 +29,20 @@ const index = () => {
         >
           <ButtonText>Sign up</ButtonText>
         </Button>
-        <Button
+        {/* <Button
           onPress={() => {
             router.push("/auth/forgot-password");
           }}
         >
           <ButtonText>Forgot password</ButtonText>
-        </Button>
-        <Button
+        </Button> */}
+        {/* <Button
           onPress={() => {
             router.push("/auth/create-password");
           }}
         >
           <ButtonText>Create password</ButtonText>
-        </Button>
+        </Button> */}
         <Button
           onPress={() => {
             router.push("/dashboard/dashboard-layout");
@@ -50,13 +50,13 @@ const index = () => {
         >
           <ButtonText>Dashboard</ButtonText>
         </Button>
-        <Button
+        {/* <Button
           onPress={() => {
             router.push("/profile/profile");
           }}
         >
           <ButtonText>Profile</ButtonText>
-        </Button>
+        </Button> */}
       </VStack>
     </SafeAreaView>
   );
