@@ -1,33 +1,83 @@
-import { Avatar, AvatarImage } from "@/src/components/ui/avatar";
-import { Button, ButtonText } from "@/src/components/ui/button";
-import { HStack } from "@/src/components/ui/hstack";
-import { Text } from "@/src/components/ui/text";
-import { VStack } from "@/src/components/ui/vstack";
+import {
+  Button,
+  Icon,
+  Box,
+  Text,
+  HStack,
+  Image,
+  Card,
+  styled,
+} from "@gluestack-ui/themed";
+import { ThumbsUp, MessageCircle } from "lucide-react-native"; // Importando iconos de lucide-react-native
+import {
+  StyledCard,
+  StyledImageContainer,
+  StyledTextContainer,
+  StyledName,
+  StyledGrade,
+  StyledAvgRating,
+  StyledFooterContainer,
+  StyledIconContainer,
+  StyledButton,
+} from "./styles";
 
-interface CardData {
-  bannerUri: string;
-  title: string;
-  description: string;
+interface ClimbingCardProps {
+  imageUrl?: string;
+  name: string;
+  grade: string;
+  avgRating: number;
+  likes: number;
+  comments: number;
 }
 
-const HeadingCards: CardData[] = [
-  { bannerUri: require("@/src/assets/dashboard/dashboard-layout/image.png"), title: "Update your profile", description: "Add your details" },
-  { bannerUri: require("@/src/assets/dashboard/dashboard-layout/image2.png"), title: "Your skills", description: "Add your skills here" },
-];
+const ClimbingCard: React.FC<ClimbingCardProps> = ({
+  imageUrl,
+  name,
+  grade,
+  avgRating,
+  likes,
+  comments,
+}) => {
+  const imageSrc = imageUrl || "https://via.placeholder.com/400"; // Usa una URL predeterminada si imageUrl es undefined
 
-export const HeadingCard = ({ bannerUri, title, description }: CardData) => (
-  <HStack space="md" className="border border-border-300 rounded-lg p-4 items-center justify-between">
-    <HStack space="xl" className="items-center">
-      <Avatar>
-        <AvatarImage height={"100%"} width={"100%"} source={bannerUri} />
-      </Avatar>
-      <VStack>
-        <Text className="font-semibold text-typography-900 line-clamp-1">{title}</Text>
-        <Text className="line-clamp-1">{description}</Text>
-      </VStack>
-    </HStack>
-    <Button size="xs">
-      <ButtonText>Edit</ButtonText>
-    </Button>
-  </HStack>
-);
+  return (
+    <StyledCard>
+      <StyledImageContainer>
+        <Image
+          source={{ uri: imageSrc }} // Usamos la propiedad `uri` correctamente
+          alt="Imagen de la vía de escalada"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </StyledImageContainer>
+
+      <StyledTextContainer>
+        <StyledName>{name}</StyledName>
+        <StyledGrade>Grado: {grade}</StyledGrade>
+        <StyledAvgRating>
+          Promedio de calificación: {avgRating} / 5
+        </StyledAvgRating>
+      </StyledTextContainer>
+
+      <StyledFooterContainer>
+        <StyledIconContainer>
+          <StyledButton aria-label="Like">
+            <Icon as={ThumbsUp} style={{ marginRight: 8, color: "#4B8CFC" }} />
+            <Text>{likes}</Text>
+          </StyledButton>
+        </StyledIconContainer>
+
+        <StyledIconContainer>
+          <StyledButton aria-label="Comentario">
+            <Icon
+              as={MessageCircle}
+              style={{ marginRight: 8, color: "#4B8CFC" }}
+            />
+            <Text>{comments}</Text>
+          </StyledButton>
+        </StyledIconContainer>
+      </StyledFooterContainer>
+    </StyledCard>
+  );
+};
+
+export default ClimbingCard;

@@ -3,16 +3,14 @@ import { HStack } from "@/src/components/ui/hstack";
 import { Icon } from "@/src/components/ui/icon";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
+import ClimbingCard from "@/src/shared/ui/organism/Card/Card";
 import { MobileFooter } from "@/src/widgets/MobileFooter";
 import { MobileHeader } from "@/src/widgets/MobileHeader";
 import { Sidebar } from "@/src/widgets/Sidebar";
 import { WebHeader } from "@/src/widgets/WebHeader/WebHeader";
 import { useMediaQuery } from "@gluestack-style/react";
 import { Href } from "expo-router";
-import {
-  HomeIcon,
-  UserIcon,
-} from "lucide-react-native";
+import { HomeIcon, UserIcon } from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -26,7 +24,39 @@ interface DashboardLayoutProps {
 // Example component for main content
 const MainContent = () => {
   return (
-    <VStack className="p-4">{/* Main dashboard content goes here */}</VStack>
+    <VStack
+      style={{
+        padding: 16,
+        gap: 13,
+        maxHeight: "100%", // Limita la altura máxima
+        overflowY: "auto", // Scroll solo en vertical
+      }}
+    >
+      <ClimbingCard
+        imageUrl="aaa"
+        name="Vía de Escalada A"
+        grade="5.10a"
+        avgRating={4.5}
+        likes={120}
+        comments={8}
+      />
+      <ClimbingCard
+        imageUrl="aaa"
+        name="Vía de Escalada B"
+        grade="5.11b"
+        avgRating={4.8}
+        likes={180}
+        comments={12}
+      />
+      <ClimbingCard
+        imageUrl="aaa"
+        name="Vía de Escalada B"
+        grade="5.11b"
+        avgRating={4.8}
+        likes={180}
+        comments={12}
+      />
+    </VStack>
   );
 };
 
