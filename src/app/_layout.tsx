@@ -13,7 +13,8 @@ import "../../global.css";
 import { GluestackUIProvider } from "../components/ui/gluestack-ui-provider";
 import { useColorScheme } from "../components/useColorScheme";
 import { RecoilRoot } from "recoil";
-
+import { StyledProvider } from "@gluestack-style/react";
+import { customConfig } from "@/gluestack-style.config";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -57,17 +58,19 @@ function RootLayoutNav() {
 
   return (
     <RecoilRoot>
-      <GluestackUIProvider mode={"light"} >
-        <ThemeProvider value={DefaultTheme}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="signin" />
-            <Stack.Screen name="signup" />
-            <Stack.Screen name="forgot-password" />
-            <Stack.Screen name="create-password" />
-            <Stack.Screen name="dashboard" />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </ThemeProvider>
+      <GluestackUIProvider mode={"light"}>
+        <StyledProvider config={customConfig}>
+          <ThemeProvider value={DefaultTheme}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="signin" />
+              <Stack.Screen name="signup" />
+              <Stack.Screen name="forgot-password" />
+              <Stack.Screen name="create-password" />
+              <Stack.Screen name="dashboard" />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </ThemeProvider>
+        </StyledProvider>
       </GluestackUIProvider>
     </RecoilRoot>
   );

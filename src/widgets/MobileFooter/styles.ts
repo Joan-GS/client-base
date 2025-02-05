@@ -12,7 +12,7 @@ export const FooterContainer = styled(HStack, {
   left: 0,
   bottom: 0,
   right: 0,
-  padding: 12,
+  padding: "$3",
   overflow: "hidden",
   alignItems: "center",
   shadowColor: "#000",
@@ -20,7 +20,7 @@ export const FooterContainer = styled(HStack, {
   shadowOpacity: 0.2,
   shadowRadius: 4,
   elevation: 5,
-  backgroundColor: "#fff",
+  backgroundColor: "$primary100",
   display: "flex",
 });
 
@@ -29,7 +29,7 @@ export const FooterButton = styled(Pressable, {
   flexDirection: "column",
   alignItems: "center",
   flex: 1,
-  paddingTop: 4,
+  paddingTop: "$1",
 });
 
 // Style for icons inside the footer
