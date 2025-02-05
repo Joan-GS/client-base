@@ -1,17 +1,21 @@
 import { SidebarButton, SidebarContainer, SidebarIcon } from "./styles";
 import { useState } from "react";
-import { Href, router } from "expo-router";
+import { Href, router, usePathname } from "expo-router";
 
 interface SidebarProps {
   tabs: { iconText: string; iconName: any; route: Href }[];
 }
 
 export const Sidebar = ({ tabs }: SidebarProps) => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const currentPath = usePathname();
 
-  const handlePress = (index: number) => {
-    setSelectedIndex(index);
-    router.push("/dashboard/dashboard-layout");
+  // Encuentra el índice del tab activo basándose en la ruta actual
+  const selectedIndex = tabs.findIndex((tab) => tab.route === currentPath);
+
+  const handlePress = (index: number, route: Href) => {
+    if (currentPath !== route) {
+      router.replace(route);
+    }
   };
 
   return (
@@ -20,7 +24,7 @@ export const Sidebar = ({ tabs }: SidebarProps) => {
         <SidebarButton
           key={index}
           className="hover:bg-background-50"
-          onPress={() => handlePress(index)}
+          onPress={() => handlePress(index, item.route)}
         >
           <SidebarIcon
             as={item.iconName}

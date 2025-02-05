@@ -3,10 +3,10 @@ import { HStack } from "@/src/components/ui/hstack";
 import { Icon } from "@/src/components/ui/icon";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
-import { MobileFooter } from "@/src/shared/ui/organism/MobileFooter";
-import { MobileHeader } from "@/src/shared/ui/organism/MobileHeader";
-import { Sidebar } from "@/src/shared/ui/organism/Sidebar";
-import { WebHeader } from "@/src/shared/ui/organism/WebHeader/WebHeader";
+import { MobileFooter } from "@/src/widgets/MobileFooter";
+import { MobileHeader } from "@/src/widgets/MobileHeader";
+import { Sidebar } from "@/src/widgets/Sidebar";
+import { WebHeader } from "@/src/widgets/WebHeader/WebHeader";
 import { useMediaQuery } from "@gluestack-style/react";
 import { Href } from "expo-router";
 import {

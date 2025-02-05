@@ -8,8 +8,10 @@ import { Pressable } from "@/src/components/ui/pressable";
 
 // Profile text container
 export const ProfileContainer = styled(VStack, {
+  display: "flex",
+  flexDirection: "column",
+  gap: 16,
   alignItems: "center",
-  backgroundColor: "#FFFFFF",
   borderRadius: 8,
   shadowColor: "#000",
   shadowOffset: { width: 0, height: 2 },
@@ -23,10 +25,10 @@ export const ProfileContainer = styled(VStack, {
 
 // Profile Header container
 export const ProfileHeader = styled(HStack, {
-  paddingBottom: 16,
-  paddingHorizontal: 20,
   alignItems: "center",
   flexDirection: "column",
+  width: "100%",
+  paddingLeft: 8,
 });
 
 // Profile text container
@@ -36,9 +38,7 @@ export const ProfileText = styled(VStack, {
 
 // Stats Section container
 export const StatsSection = styled(HStack, {
-  paddingHorizontal: 20,
-  paddingBottom: 8,
-  justifyContent: "space-between",
+  justifyContent: "space-evenly",
   width: "100%",
 });
 
@@ -47,15 +47,9 @@ export const StatsItem = styled(VStack, {
   alignItems: "center",
 });
 
-// Button container for settings
-export const SettingsButtonContainer = styled(Box, {
-  paddingHorizontal: 20,
-  paddingVertical: 16,
-});
-
 // Button style for settings
-export const SettingsButton = styled(Button, {
-  marginBottom: 8,
+export const EditProfileButton = styled(Button, {
+  width: "100%",
 });
 
 // Modal Styles

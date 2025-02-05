@@ -1,16 +1,13 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next"; // Hook for translation
 import { Avatar } from "@/src/components/ui/avatar";
 import { Text } from "@/src/components/ui/text";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
-import { useMediaQuery } from "@gluestack-style/react";
 import { DashboardLayout } from "../../dashboard/dashboard-layout";
 import {
   ProfileContainer,
   ProfileHeader,
   ProfileText,
-  SettingsButton,
-  SettingsButtonContainer,
   StatsItem,
   StatsSection,
   ModalStyled,
@@ -23,9 +20,6 @@ import { Button, ButtonIcon, ButtonText } from "@/src/components/ui/button";
 import { EditIcon, Icon } from "@/src/components/ui/icon";
 import { ModalHeader, ModalFooter } from "@/src/components/ui/modal";
 import { Input, InputField } from "@/src/components/ui/input";
-import { Box } from "@/src/components/ui/box";
-import { Pressable } from "@/src/components/ui/pressable";
-import { CameraSparklesIcon } from "./assets/icons/camera-sparkles";
 import { EditPhotoIcon } from "./assets/icons/edit-photo";
 import { Divider } from "@/src/components/ui/divider";
 
@@ -35,45 +29,44 @@ const initialProfileData = {
   followers: 1200,
   createdRoutes: 15,
   completedRoutes: 30,
-  avatar: "https://example.com/avatar.jpg",
+  avatar: "https://example.com/avatar.jpg", // Default avatar URL
 };
 
 const ProfileScreen = () => {
   const { t } = useTranslation(); // Translation hook
 
+  // State management for settings and modal visibility
   const [isSettingsVisible, setIsSettingsVisible] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profileData, setProfileData] = useState(initialProfileData);
 
-  // Toggle settings visibility
-  const toggleSettings = () => {
-    setIsSettingsVisible(!isSettingsVisible);
-  };
-
-  // Toggle Edit Profile modal
+  // Open the Edit Profile modal
   const openEditModal = () => {
     setIsEditModalOpen(true);
   };
 
+  // Close the Edit Profile modal
   const closeEditModal = () => {
     setIsEditModalOpen(false);
   };
 
-  // Handle saving changes
+  // Save the changes made in the profile
   const saveProfileChanges = () => {
     setProfileData({
       ...profileData,
-      username: profileData.username, // Guardamos el nombre de usuario modificado
-      avatar: profileData.avatar, // Guardamos la URL de avatar modificada
+      username: profileData.username, // Save the modified username
+      avatar: profileData.avatar, // Save the modified avatar URL
     });
     closeEditModal();
   };
 
   return (
     <SafeAreaView className="h-full w-full">
+      {/* Profile container */}
       <ProfileContainer>
+        {/* Profile header with avatar and username */}
         <ProfileHeader>
-          <Avatar size="2xl" />
+          <Avatar size="2xl" /> {/* Avatar of the user */}
           <ProfileText>
             <Text className="text-xl font-semibold">
               {profileData.username}
@@ -85,28 +78,40 @@ const ProfileScreen = () => {
         <StatsSection>
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.createdRoutes}
+              {profileData.createdRoutes}{" "}
+              {/* Display number of created routes */}
             </Text>
-            <Text className="text-sm text-gray-500">{t("Routes Created")}</Text>
+            <Text className="text-sm text-gray-500">{t("Followers")}</Text>
           </StatsItem>
+
+          {/* Divider between stats */}
           <Divider className="my-0.4" orientation="vertical" />
 
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.completedRoutes}
+              {profileData.createdRoutes}{" "}
+              {/* Display number of created routes */}
             </Text>
-            <Text className="text-sm text-gray-500">
-              {t("Routes Completed")}
-            </Text>
+            <Text className="text-sm text-gray-500">{t("Following")}</Text>
           </StatsItem>
+
           <Divider className="my-0.4" orientation="vertical" />
+
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.completedRoutes}
+              {profileData.completedRoutes}{" "}
+              {/* Display number of completed routes */}
             </Text>
-            <Text className="text-sm text-gray-500">
-              {t("Routes Completed")}
+            <Text className="text-sm text-gray-500">{t("My Climbs")}</Text>
+          </StatsItem>
+
+          <Divider className="my-0.4" orientation="vertical" />
+
+          <StatsItem>
+            <Text className="font-semibold text-lg">
+              {profileData.completedRoutes} {/* Display number of climbs */}
             </Text>
+            <Text className="text-sm text-gray-500">{t("Climbs")}</Text>
           </StatsItem>
         </StatsSection>
 
@@ -122,62 +127,43 @@ const ProfileScreen = () => {
         </Button>
       </ProfileContainer>
 
-      {/* Settings Button */}
-      <SettingsButtonContainer>
-        <SettingsButton variant="outline" onPress={toggleSettings}>
-          <ButtonText>
-            {isSettingsVisible ? t("Hide Settings") : t("Show Settings")}
-          </ButtonText>
-        </SettingsButton>
-      </SettingsButtonContainer>
-
-      {/* Settings Section */}
-      {isSettingsVisible && (
-        <SettingsButtonContainer>
-          <SettingsButton variant="solid">
-            <ButtonText>{t("Edit Profile")}</ButtonText>
-          </SettingsButton>
-          <SettingsButton variant="solid">
-            <ButtonText>{t("Change Password")}</ButtonText>
-          </SettingsButton>
-          <SettingsButton variant="solid">
-            <ButtonText>{t("Notification Settings")}</ButtonText>
-          </SettingsButton>
-        </SettingsButtonContainer>
-      )}
-
       {/* Edit Profile Modal */}
       {isEditModalOpen && (
         <ModalStyled isOpen={isEditModalOpen} onClose={closeEditModal}>
           <ModalContentStyled>
+            {/* Modal Header */}
             <ModalHeader>
               <Text>{t("Edit Profile")}</Text>
             </ModalHeader>
             <ModalBodyStyled>
+              {/* Avatar upload section */}
               <ModalAvatarStyled>
-                <Avatar size="2xl" />
+                <Avatar size="2xl" /> {/* Avatar preview */}
                 <ModalAvatarPressableStyled className=" bg-background-500 rounded-full items-center justify-center h-8 w-8 right-6 top-44">
-                  <Icon as={EditPhotoIcon} />
+                  <Icon as={EditPhotoIcon} /> {/* Icon to edit photo */}
                 </ModalAvatarPressableStyled>
               </ModalAvatarStyled>
-              {/* Username Input */}
+
+              {/* Username input */}
               <Text className="text-sm font-semibold">{t("Username")}</Text>
               <Input>
                 <InputField
-                  value={initialProfileData.username} // Se muestra el nombre actual
+                  value={initialProfileData.username} // Display current username
                 />
               </Input>
 
-              {/* Avatar URL Input */}
+              {/* Avatar URL input */}
               <Text className="text-sm font-semibold mt-2">
                 {t("AvatarURL")}
               </Text>
               <Input>
                 <InputField
-                  value={initialProfileData.avatar} // Se muestra la URL actual
+                  value={initialProfileData.avatar} // Display current avatar URL
                 />
               </Input>
             </ModalBodyStyled>
+
+            {/* Modal Footer with action buttons */}
             <ModalFooter>
               <Button variant="outline" onPress={closeEditModal}>
                 <ButtonText>{t("Cancel")}</ButtonText>
@@ -201,7 +187,7 @@ export const Profile = () => {
   return (
     <SafeAreaView className="h-full w-full">
       <DashboardLayout
-        title="Profile"
+        title="Profile" // Dashboard layout with the profile title
         isSidebarVisible={true}
         isHeaderVisible={false}
       >

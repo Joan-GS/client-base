@@ -10,22 +10,22 @@ export const SidebarContainer = styled(VStack, {
   alignItems: "center",
   borderRightWidth: 1,
   borderColor: "#ccc",
-  backgroundColor: "#fff",
+  backgroundColor: "#FFFFFF",
   gap: 24,
+  zIndex: 5,
 });
 
 export const SidebarButton = styled(Pressable, {
-    flexDirection: "column",
-    alignItems: "center",
-    padding: 8,
-    borderRadius: 8,
-  });
-  
+  flexDirection: "column",
+  alignItems: "center",
+  padding: 8,
+  borderRadius: 8,
+  backgroundColor: "#fff",
+});
 
 export const SidebarIcon = styled(Icon, {
   width: 44,
   height: 36,
-  stroke: "#555",
   fill: "none",
 
   variants: {
