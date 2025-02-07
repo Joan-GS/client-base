@@ -3,6 +3,7 @@ import { HStack } from "@/src/components/ui/hstack";
 import { Icon } from "@/src/components/ui/icon";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
+import GenericCard from "@/src/shared/ui/organism/Card/Card";
 import ClimbingCard from "@/src/shared/ui/organism/Card/Card";
 import { MobileFooter } from "@/src/widgets/MobileFooter";
 import { MobileHeader } from "@/src/widgets/MobileHeader";
@@ -10,7 +11,7 @@ import { Sidebar } from "@/src/widgets/Sidebar";
 import { WebHeader } from "@/src/widgets/WebHeader/WebHeader";
 import { useMediaQuery } from "@gluestack-style/react";
 import { Href } from "expo-router";
-import { HomeIcon, UserIcon } from "lucide-react-native";
+import { HomeIcon, MessageCircle, ThumbsUp, UserIcon } from "lucide-react-native";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -21,7 +22,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-// Example component for main content
+
 const MainContent = () => {
   return (
     <VStack
@@ -30,35 +31,43 @@ const MainContent = () => {
         gap: 13,
         maxHeight: "100%", // Limita la altura máxima
         overflowY: "auto", // Scroll solo en vertical
+        alignItems: "center",
       }}
     >
-      <ClimbingCard
+      <GenericCard
         imageUrl="aaa"
-        name="Vía de Escalada A"
-        grade="5.10a"
-        avgRating={4.5}
-        likes={120}
-        comments={8}
+        title="Vía de Escalada A"
+        subtitle="Grado: 5.10a"
+        description="Promedio de calificación: 4.5 / 5"
+        primaryActionCount={120}
+        secondaryActionCount={8}
+        primaryIcon={ThumbsUp}
+        secondaryIcon={MessageCircle}
       />
-      <ClimbingCard
+      <GenericCard
         imageUrl="aaa"
-        name="Vía de Escalada B"
-        grade="5.11b"
-        avgRating={4.8}
-        likes={180}
-        comments={12}
+        title="Vía de Escalada B"
+        subtitle="Grado: 5.11b"
+        description="Promedio de calificación: 4.8 / 5"
+        primaryActionCount={180}
+        secondaryActionCount={12}
+        primaryIcon={ThumbsUp}
+        secondaryIcon={MessageCircle}
       />
-      <ClimbingCard
+      <GenericCard
         imageUrl="aaa"
-        name="Vía de Escalada B"
-        grade="5.11b"
-        avgRating={4.8}
-        likes={180}
-        comments={12}
+        title="Vía de Escalada C"
+        subtitle="Grado: 5.12a"
+        description="Promedio de calificación: 4.9 / 5"
+        primaryActionCount={200}
+        secondaryActionCount={15}
+        primaryIcon={ThumbsUp}
+        secondaryIcon={MessageCircle}
       />
     </VStack>
   );
 };
+
 
 export const DashboardLayout = ({
   title,

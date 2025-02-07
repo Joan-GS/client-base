@@ -1,62 +1,60 @@
-import { Box, Button, Card, HStack, styled, Text } from '@gluestack-ui/themed';
+import {
+  Button,
+  Icon,
+  Box,
+  Text,
+  HStack,
+  Image,
+  Card,
+  styled,
+} from "@gluestack-ui/themed";
 
 export const StyledCard = styled(Card, {
-  borderRadius: 12,
-  overflow: 'hidden',
-  shadowColor: 'rgba(0, 0, 0, 0.1)',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  marginBottom: 16,
-  backgroundColor: '$neutral60',
-});
-
-export const StyledImageContainer = styled(Box, {
-  width: '100%',
-  height: 200,
-  overflow: 'hidden',
-});
-
-export const StyledTextContainer = styled(Box, {
-  padding: 12,
-});
-
-export const StyledName = styled(Text, {
-  fontWeight: 'bold',
-  fontSize: 18,
-  marginBottom: 4,
-});
-
-export const StyledGrade = styled(Text, {
-  color: '#8a8a8a',
-  fontSize: 14,
-  marginBottom: 4,
-});
-
-export const StyledAvgRating = styled(Text, {
-  color: '#666666',
-  fontSize: 14,
-});
-
-export const StyledFooterContainer = styled(HStack, {
-  padding: 12,
-  justifyContent: 'space-between',
-  flexDirection: 'row',
-});
-
-export const StyledIconContainer = styled(HStack, {
-  flexDirection: 'row',
-  alignItems: 'center',
-});
-
-export const StyledButton = styled(Button, {
-  backgroundColor: 'transparent',
+  width: "100%",
+  maxWidth: 425,
+  flexDirection: "column",
+  padding: 16,
   borderWidth: 1,
-  borderColor: '#E5E5E5',
+  borderColor: "#E5E5E5",
+  borderRadius: 12,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 5,
+  backgroundColor: "#fff",
+});
+
+export const StyledImage = styled(Image, {
+  width: "100%",
+  aspectRatio: 352 / 234,
+  borderRadius: 8,
+});
+
+export const StyledTitle = styled(Text, {
+  fontWeight: "bold",
+  fontSize: 18,
+  marginTop: 8,
+});
+
+export const StyledText = styled(Text, {
+  fontSize: 14,
+  color: "#666",
+  marginTop: 4,
+});
+
+export const StyledFooter = styled(HStack, {
+  flexDirection: "row",
+  marginTop: 12,
+  justifyContent: "space-around",
+  alignItems: "center",
+});
+
+export const StyledIconButton = styled(Button, {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "transparent",
   padding: 8,
   borderRadius: 8,
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingHorizontal: 16,
 });
 
