@@ -40,7 +40,7 @@ const GenericCard: React.FC<GenericCardProps> = ({
   primaryIcon,
   secondaryIcon,
 }) => {
-  const imageSrc = imageUrl || "https://via.placeholder.com/400";
+  const imageSrc = imageUrl || "https://placehold.co/600x400";
 
   return (
     <StyledCard>

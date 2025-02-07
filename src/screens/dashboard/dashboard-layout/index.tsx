@@ -4,7 +4,6 @@ import { Icon } from "@/src/components/ui/icon";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
 import GenericCard from "@/src/shared/ui/organism/Card/Card";
-import ClimbingCard from "@/src/shared/ui/organism/Card/Card";
 import { MobileFooter } from "@/src/widgets/MobileFooter";
 import { MobileHeader } from "@/src/widgets/MobileHeader";
 import { Sidebar } from "@/src/widgets/Sidebar";
@@ -35,7 +34,6 @@ const MainContent = () => {
       }}
     >
       <GenericCard
-        imageUrl="aaa"
         title="Vía de Escalada A"
         subtitle="Grado: 5.10a"
         description="Promedio de calificación: 4.5 / 5"
@@ -45,7 +43,6 @@ const MainContent = () => {
         secondaryIcon={MessageCircle}
       />
       <GenericCard
-        imageUrl="aaa"
         title="Vía de Escalada B"
         subtitle="Grado: 5.11b"
         description="Promedio de calificación: 4.8 / 5"
@@ -55,7 +52,6 @@ const MainContent = () => {
         secondaryIcon={MessageCircle}
       />
       <GenericCard
-        imageUrl="aaa"
         title="Vía de Escalada C"
         subtitle="Grado: 5.12a"
         description="Promedio de calificación: 4.9 / 5"
