@@ -64,6 +64,8 @@ function RootLayoutNav() {
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="signin" />
               <Stack.Screen name="signup" />
+              <Stack.Screen name="confirm-mail" initialParams={{ email: "" }} />
+              <Stack.Screen name="verify-mail" initialParams={{ email: "", code: "" }} />
               <Stack.Screen name="forgot-password" />
               <Stack.Screen name="create-password" />
               <Stack.Screen name="dashboard" />

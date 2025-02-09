@@ -7,7 +7,6 @@ import { Link } from "@/src/components/ui/link";
 import {
   FormControl,
   FormControlError,
-  FormControlErrorIcon,
   FormControlErrorText,
   FormControlLabel,
   FormControlLabelText,
@@ -36,7 +35,6 @@ import { Keyboard } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { AlertTriangle } from "lucide-react-native";
 import { GoogleIcon } from "./assets/icons/google";
 import { Pressable } from "@/src/components/ui/pressable";
 import { AuthLayout } from "../layout";
@@ -51,11 +49,13 @@ import {
 import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "@gluestack-style/react";
 import { registerUser } from "./api/register";
-import { useSetRecoilState } from "recoil";
-import { authState } from "@/src/recoil/users.recoil";
 
 // Validation schema using Yup
 const signUpSchema = Yup.object().shape({
+  username: Yup.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(20, "Username must be at most 20 characters")
+    .required("Username is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters")
@@ -92,7 +92,6 @@ const SignUpWithLeftBackground = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const setAuthState = useSetRecoilState(authState);
 
   // Toggles password visibility
   const handleState = () => {
@@ -114,26 +113,15 @@ const SignUpWithLeftBackground = () => {
   const onSubmit = async (data: SignUpSchemaType) => {
     try {
       // Attempt login with credentials
-      const response = await registerUser(data.email, data.password);
+      const response = await registerUser(
+        data.username,
+        data.email,
+        data.password
+      );
 
-      if (response?.access_token) {
-        // Store authentication token in global state (Recoil)
-        setAuthState({
-          token: response.access_token, // Use access_token from response
-          isAuthenticated: true,
-        });
+      if (response?.success) {
+        router.push({ pathname: `/auth/confirm-mail`, params: {email: data.email }});
       }
-
-      // Show success toast message
-      toast.show({
-        render: ({ id }) => (
-          <Toast nativeID={id} action="success">
-            <ToastTitle>{t("Login Successful")}</ToastTitle>
-          </Toast>
-        ),
-      });
-      // Redirect user to the dashboard
-      router.push("/dashboard/dashboard-layout");
     } catch (error) {
       // Show error toast message if login fails
       toast.show({
@@ -173,6 +161,36 @@ const SignUpWithLeftBackground = () => {
       </LoginTextsContainer>
 
       <FormsContainer>
+        {/* Username input field */}
+        <FormControl isInvalid={!!errors.username}>
+          <FormControlLabel>
+            <FormControlLabelText>{t("Username")}</FormControlLabelText>
+          </FormControlLabel>
+          <Controller
+            name="username"
+            control={control}
+            defaultValue=""
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input>
+                <InputField
+                  className="text-sm"
+                  placeholder={t("Username")}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  onSubmitEditing={handleKeyPress}
+                  returnKeyType="done"
+                />
+              </Input>
+            )}
+          />
+          <FormControlError>
+            <FormControlErrorText>
+              {"* " + errors.username?.message}
+            </FormControlErrorText>
+          </FormControlError>
+        </FormControl>
+
         {/* Email input field */}
         <FormControl isInvalid={!!errors.email}>
           <FormControlLabel>

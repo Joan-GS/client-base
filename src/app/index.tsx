@@ -57,6 +57,20 @@ const index = () => {
         >
           <ButtonText>Profile</ButtonText>
         </Button>
+        <Button
+          onPress={() => {
+            router.push("/auth/confirm-mail");
+          }}
+        >
+          <ButtonText>Confirm Mail</ButtonText>
+        </Button>
+        <Button
+          onPress={() => {
+            router.push("/auth/verify-mail");
+          }}
+        >
+          <ButtonText>Verify Mail</ButtonText>
+        </Button>
       </VStack>
     </SafeAreaView>
   );

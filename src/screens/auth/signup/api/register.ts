@@ -3,13 +3,13 @@
 import { LoginResponse, loginUser } from "../../signin/api/login";
 
 export interface RegisterResponse {
-  message: string;
-  access_token?: string;
+  success?: boolean;
 }
 
 export const registerUser = async (
+  userName: string,
   email: string,
-  password: string
+  password: string,
 ): Promise<RegisterResponse> => {
   try {
     // Step 1: Register the user (waiting for registration to complete first)
@@ -19,8 +19,7 @@ export const registerUser = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        givenName: "test", // Hardcoded value
-        familyName: "test", // Hardcoded value
+        userName, // Dynamic value
         email, // Dynamic value
         password, // Dynamic value
         birthDate: "2001-05-16T15:00:00.000Z", // Hardcoded value
@@ -34,16 +33,11 @@ export const registerUser = async (
       throw new Error(errorData.message || "Registration failed");
     }
 
-    // Step 2: If registration is successful, perform login (waiting for login response)
-    const loginResponse: LoginResponse = await loginUser(email, password);
-
-    return {
-      message: "Registration and Login successful!",
-      access_token: loginResponse.access_token, // Access token from login response
-    };
+    // Return successful registration response
+    return { success: true };
   } catch (error: unknown) {
     if (error instanceof Error) {
-      // If an error occurs at any point, throw it
+      // If an error occurs during registration, throw it
       throw new Error(error.message || "An unexpected error occurred");
     }
     // In case of an unknown error
