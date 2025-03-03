@@ -10,18 +10,23 @@ import { Pressable } from "@/src/components/ui/pressable";
 export const ProfileContainer = styled(VStack, {
   display: "flex",
   flexDirection: "column",
+  width: "100%",
   gap: 16,
   alignItems: "center",
   borderRadius: 8,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-  elevation: 5,
   paddingTop: 30,
   paddingBottom: 20,
   zIndex: 0,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 4,
+  backgroundColor: "white",
 });
+
+
+
 
 // Profile Header container
 export const ProfileHeader = styled(HStack, {

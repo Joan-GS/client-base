@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useTranslation } from "react-i18next"; // Hook for translation
+import { useTranslation } from "react-i18next";
 import { Avatar } from "@/src/components/ui/avatar";
 import { Text } from "@/src/components/ui/text";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
@@ -22,51 +22,43 @@ import { ModalHeader, ModalFooter } from "@/src/components/ui/modal";
 import { Input, InputField } from "@/src/components/ui/input";
 import { EditPhotoIcon } from "./assets/icons/edit-photo";
 import { Divider } from "@/src/components/ui/divider";
+import { ModalBackdrop } from "@gluestack-ui/themed";
 
-// Mock data for the profile
 const initialProfileData = {
   username: "John Doe",
   followers: 1200,
   createdRoutes: 15,
   completedRoutes: 30,
-  avatar: "https://example.com/avatar.jpg", // Default avatar URL
+  avatar: "https://example.com/avatar.jpg",
 };
 
 const ProfileScreen = () => {
-  const { t } = useTranslation(); // Translation hook
-
-  // State management for settings and modal visibility
-  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  const { t } = useTranslation();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profileData, setProfileData] = useState(initialProfileData);
 
-  // Open the Edit Profile modal
   const openEditModal = () => {
     setIsEditModalOpen(true);
   };
 
-  // Close the Edit Profile modal
   const closeEditModal = () => {
     setIsEditModalOpen(false);
   };
 
-  // Save the changes made in the profile
   const saveProfileChanges = () => {
     setProfileData({
       ...profileData,
-      username: profileData.username, // Save the modified username
-      avatar: profileData.avatar, // Save the modified avatar URL
+      username: profileData.username,
+      avatar: profileData.avatar,
     });
     closeEditModal();
   };
 
   return (
     <SafeAreaView className="h-full w-full">
-      {/* Profile container */}
       <ProfileContainer>
-        {/* Profile header with avatar and username */}
         <ProfileHeader>
-          <Avatar size="2xl" /> {/* Avatar of the user */}
+          <Avatar size="2xl" />
           <ProfileText>
             <Text className="text-xl font-semibold">
               {profileData.username}
@@ -74,23 +66,19 @@ const ProfileScreen = () => {
           </ProfileText>
         </ProfileHeader>
 
-        {/* Followers and Stats Section */}
         <StatsSection>
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.createdRoutes}{" "}
-              {/* Display number of created routes */}
+              {profileData.createdRoutes}
             </Text>
             <Text className="text-sm text-gray-500">{t("Followers")}</Text>
           </StatsItem>
 
-          {/* Divider between stats */}
           <Divider className="my-0.4" orientation="vertical" />
 
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.createdRoutes}{" "}
-              {/* Display number of created routes */}
+              {profileData.createdRoutes}
             </Text>
             <Text className="text-sm text-gray-500">{t("Following")}</Text>
           </StatsItem>
@@ -99,8 +87,7 @@ const ProfileScreen = () => {
 
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.completedRoutes}{" "}
-              {/* Display number of completed routes */}
+              {profileData.completedRoutes}
             </Text>
             <Text className="text-sm text-gray-500">{t("My Climbs")}</Text>
           </StatsItem>
@@ -109,13 +96,12 @@ const ProfileScreen = () => {
 
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.completedRoutes} {/* Display number of climbs */}
+              {profileData.completedRoutes}
             </Text>
             <Text className="text-sm text-gray-500">{t("Climbs")}</Text>
           </StatsItem>
         </StatsSection>
 
-        {/* Edit Profile Button */}
         <Button
           variant="outline"
           action="secondary"
@@ -127,43 +113,37 @@ const ProfileScreen = () => {
         </Button>
       </ProfileContainer>
 
-      {/* Edit Profile Modal */}
       {isEditModalOpen && (
-        <ModalStyled isOpen={isEditModalOpen} onClose={closeEditModal}>
+        <ModalStyled
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          closeOnOverlayClick={true}
+        >
           <ModalContentStyled>
-            {/* Modal Header */}
             <ModalHeader>
               <Text>{t("Edit Profile")}</Text>
             </ModalHeader>
             <ModalBodyStyled>
-              {/* Avatar upload section */}
               <ModalAvatarStyled>
-                <Avatar size="2xl" /> {/* Avatar preview */}
+                <Avatar size="2xl" />
                 <ModalAvatarPressableStyled className=" bg-background-500 rounded-full items-center justify-center h-8 w-8 right-6 top-44">
-                  <Icon as={EditPhotoIcon} /> {/* Icon to edit photo */}
+                  <Icon as={EditPhotoIcon} />
                 </ModalAvatarPressableStyled>
               </ModalAvatarStyled>
 
-              {/* Username input */}
               <Text className="text-sm font-semibold">{t("Username")}</Text>
               <Input>
-                <InputField
-                  value={initialProfileData.username} // Display current username
-                />
+                <InputField value={profileData.username} />
               </Input>
 
-              {/* Avatar URL input */}
               <Text className="text-sm font-semibold mt-2">
                 {t("AvatarURL")}
               </Text>
               <Input>
-                <InputField
-                  value={initialProfileData.avatar} // Display current avatar URL
-                />
+                <InputField value={profileData.avatar} />
               </Input>
             </ModalBodyStyled>
 
-            {/* Modal Footer with action buttons */}
             <ModalFooter>
               <Button variant="outline" onPress={closeEditModal}>
                 <ButtonText>{t("Cancel")}</ButtonText>
@@ -187,7 +167,7 @@ export const Profile = () => {
   return (
     <SafeAreaView className="h-full w-full">
       <DashboardLayout
-        title="Profile" // Dashboard layout with the profile title
+        title="Profile"
         isSidebarVisible={true}
         isHeaderVisible={false}
       >

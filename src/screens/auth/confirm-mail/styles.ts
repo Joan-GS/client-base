@@ -15,10 +15,11 @@ export const VStackContainer = styled(VStack, {
   alignItems: "center",
   flex: 1,
   paddingHorizontal: 20,
+  flexWrap: 'wrap'
 });
 
 // Container for the message and button
-export const MessageContainer = styled(View, {
+export const MessageContainer = styled(VStack, {
   gap: 20,
   width: "100%",
   alignItems: "center",
@@ -37,9 +38,9 @@ export const ButtonTextStyled = styled(UIText, {
 
 // Header text style
 export const Heading = styled(UIText, {
-  fontSize: 24,
+  fontSize: 22,
   fontWeight: "bold",
-  textAlign: "center",
+  textAlign: "center"
 });
 
 // Normal text style

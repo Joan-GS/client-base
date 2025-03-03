@@ -37,7 +37,7 @@ export const ButtonTextStyled = styled(UIText, {
 
 // Header text style
 export const Heading = styled(UIText, {
-  fontSize: 24,
+  fontSize: 22,
   fontWeight: "bold",
   textAlign: "center",
 });
