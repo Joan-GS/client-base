@@ -4,16 +4,16 @@ import { Icon } from "@/src/components/ui/icon";
 import { Pressable } from "@/src/components/ui/pressable";
 
 export const SidebarContainer = styled(VStack, {
-  width: 56,
   paddingTop: 20,
+  paddingInline: "$2",
   height: "100%",
   alignItems: "center",
   borderRightWidth: 1,
   borderColor: "#ccc",
   backgroundColor: "#FFFFFF",
   gap: 24,
-  zIndex: 5,
 });
+
 
 export const SidebarButton = styled(Pressable, {
   flexDirection: "column",
