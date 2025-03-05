@@ -38,16 +38,13 @@ import {
   VStackContainer,
   HStackContainer,
   SignUpContainer,
-  // LogoImage,
-} from "./styles"; // Add LogoImage to your styles
+} from "./styles";
 
-import { loginUser } from "./api/login";
+import { loginUser, useInitializeUser } from "./api/login";
 import { AuthLayout } from "../layout";
 import { ButtonIcon, ButtonText } from "@/src/components/ui/button";
 import { Link } from "@/src/components/ui/link";
-import { authState } from "@/src/recoil/users.recoil";
 import { useTranslation } from "react-i18next";
-import { useSetRecoilState } from "recoil";
 import { Pressable } from "@/src/components/ui/pressable";
 
 // Validation schema for login form using yup
@@ -71,21 +68,15 @@ const LoginWithLeftBackground = () => {
 
   const toast = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const setAuthState = useSetRecoilState(authState);
 
   const { t } = useTranslation();
+  const loadUser = useInitializeUser(); // Llamar al hook de inicialización del usuario
 
   // Submit form handler
   const onSubmit = async (data: LoginSchemaType) => {
     try {
       // Attempt login with credentials
       const response = await loginUser(data.email, data.password);
-
-      // Store authentication token in global state (Recoil)
-      setAuthState({
-        token: response.access_token ?? null,
-        isAuthenticated: true,
-      });
 
       // Show success toast message
       toast.show({
@@ -95,6 +86,10 @@ const LoginWithLeftBackground = () => {
           </Toast>
         ),
       });
+
+      // Llamar al hook para cargar los datos del usuario después de un login exitoso
+      loadUser(); // Cargar el usuario
+
       // Redirect user to the dashboard
       router.push("/dashboard/dashboard-layout");
     } catch (error) {
@@ -111,9 +106,6 @@ const LoginWithLeftBackground = () => {
 
   return (
     <LoginWithLeftBackgroundContainer>
-      {/* Logo - will display on small screens */}
-      {/* <LogoImage source={require("@/src/assets/images/splash-icon.png")} alt="Logo" /> */}
-
       {/* Login text section */}
       <LoginTextsContainer>
         <Heading size="3xl">{t("Log in")}</Heading>

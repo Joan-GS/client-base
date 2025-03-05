@@ -1,9 +1,8 @@
 import { atom } from "recoil";
 
-export const authState = atom({
-  key: "authState",
+export const userState = atom({
+  key: "userState",
   default: {
-    token: null as string | null,
-    isAuthenticated: false,
+    username: null as string | null,
   },
 });

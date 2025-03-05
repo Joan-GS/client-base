@@ -1,4 +1,7 @@
 // loginService.ts
+import { userState } from '@/src/recoil/users.recoil';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSetRecoilState } from 'recoil';
 
 export interface LoginResponse {
     message: string;
@@ -29,6 +32,8 @@ export interface LoginResponse {
   
       const data = await response.json();
 
+      await AsyncStorage.setItem("loggedUser", JSON.stringify(data));
+
       return {
         message: "Login successful!",
         access_token: data.access_token,
@@ -42,3 +47,36 @@ export interface LoginResponse {
     }
   };
   
+  export const useInitializeUser = () => {
+    const setUser = useSetRecoilState(userState);
+  
+    const loadUser = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem("loggedUser");
+        if (!storedUser) return;
+  
+        const { access_token } = JSON.parse(storedUser);
+  
+        const response = await fetch("http://localhost:8080/api/v1/auth/me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
+  
+        if (!response.ok) throw new Error("Error al obtener el usuario");
+  
+        const userData = await response.json();
+  
+        // Guardar solo el userName en el estado global
+        setUser({
+          username: userData.username,
+        });
+      } catch (error) {
+        console.error("Error cargando usuario:", error);
+      }
+    };
+  
+    return loadUser;
+  };

@@ -22,7 +22,8 @@ import { ModalHeader, ModalFooter } from "@/src/components/ui/modal";
 import { Input, InputField } from "@/src/components/ui/input";
 import { EditPhotoIcon } from "./assets/icons/edit-photo";
 import { Divider } from "@/src/components/ui/divider";
-import { ModalBackdrop } from "@gluestack-ui/themed";
+import { useRecoilValue } from "recoil";
+import { userState } from "@/src/recoil/users.recoil";
 
 const initialProfileData = {
   username: "John Doe",
@@ -36,6 +37,11 @@ const ProfileScreen = () => {
   const { t } = useTranslation();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profileData, setProfileData] = useState(initialProfileData);
+
+  const user = useRecoilValue(userState);
+  const username = user?.username || initialProfileData.username; // Fallback to the initial data if the username is not set
+
+  console.log("hola", user)
 
   const openEditModal = () => {
     setIsEditModalOpen(true);
@@ -61,7 +67,7 @@ const ProfileScreen = () => {
           <Avatar size="2xl" />
           <ProfileText>
             <Text className="text-xl font-semibold">
-              {profileData.username}
+              {username}
             </Text>
           </ProfileText>
         </ProfileHeader>
