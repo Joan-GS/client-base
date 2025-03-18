@@ -7,7 +7,7 @@ export interface RegisterResponse {
 }
 
 export const registerUser = async (
-  userName: string,
+  username: string,
   email: string,
   password: string,
 ): Promise<RegisterResponse> => {
@@ -19,7 +19,7 @@ export const registerUser = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userName, // Dynamic value
+        username, // Dynamic value
         email, // Dynamic value
         password, // Dynamic value
         birthDate: "2001-05-16T15:00:00.000Z", // Hardcoded value

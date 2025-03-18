@@ -69,7 +69,7 @@ export interface LoginResponse {
   
         const userData = await response.json();
   
-        // Guardar solo el userName en el estado global
+        // Guardar solo el username en el estado global
         setUser({
           username: userData.username,
         });

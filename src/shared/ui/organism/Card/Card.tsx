@@ -1,15 +1,5 @@
-import {
-  Button,
-  Icon,
-  Box,
-  Text,
-  HStack,
-  Image,
-  Card,
-  styled,
-} from "@gluestack-ui/themed";
+import { Icon, Text } from "@gluestack-ui/themed";
 import React from "react";
-import { ThumbsUp, MessageCircle } from "lucide-react-native";
 import {
   StyledCard,
   StyledFooter,
@@ -28,6 +18,9 @@ interface GenericCardProps {
   secondaryActionCount: number;
   primaryIcon: React.ElementType;
   secondaryIcon: React.ElementType;
+  onPrimaryAction?: () => void;
+  onSecondaryAction?: () => void;
+  isLiked?: boolean; // ✅ Nueva prop
 }
 
 const GenericCard: React.FC<GenericCardProps> = ({
@@ -39,6 +32,9 @@ const GenericCard: React.FC<GenericCardProps> = ({
   secondaryActionCount,
   primaryIcon,
   secondaryIcon,
+  onPrimaryAction,
+  onSecondaryAction,
+  isLiked, // ✅ Se usa para cambiar el color
 }) => {
   const imageSrc = imageUrl || "https://placehold.co/600x400";
 
@@ -49,11 +45,26 @@ const GenericCard: React.FC<GenericCardProps> = ({
       {subtitle && <StyledText>{subtitle}</StyledText>}
       {description && <StyledText>{description}</StyledText>}
       <StyledFooter>
-        <StyledIconButton>
-          <Icon as={primaryIcon} style={{ marginRight: 8, color: "#4B8CFC" }} />
-          <Text>{primaryActionCount}</Text>
+        <StyledIconButton
+          onPress={onPrimaryAction}
+          style={{
+            backgroundColor: isLiked ? "#4B8CFC" : "transparent",
+            borderRadius: 8,
+            padding: 6,
+          }}
+        >
+          <Icon
+            as={primaryIcon}
+            style={{
+              marginRight: 8,
+              color: isLiked ? "#FFF" : "#4B8CFC",
+            }}
+          />
+          <Text style={{ color: isLiked ? "#FFF" : "#000" }}>
+            {primaryActionCount}
+          </Text>
         </StyledIconButton>
-        <StyledIconButton>
+        <StyledIconButton onPress={onSecondaryAction}>
           <Icon
             as={secondaryIcon}
             style={{ marginRight: 8, color: "#4B8CFC" }}

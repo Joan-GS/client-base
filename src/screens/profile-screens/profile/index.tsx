@@ -41,8 +41,6 @@ const ProfileScreen = () => {
   const user = useRecoilValue(userState);
   const username = user?.username || initialProfileData.username; // Fallback to the initial data if the username is not set
 
-  console.log("hola", user)
-
   const openEditModal = () => {
     setIsEditModalOpen(true);
   };

@@ -1,6 +1,5 @@
 import { Box } from "@/src/components/ui/box";
 import { HStack } from "@/src/components/ui/hstack";
-import { Icon } from "@/src/components/ui/icon";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
 import GenericCard from "@/src/shared/ui/organism/Card/Card";
@@ -10,9 +9,15 @@ import { Sidebar } from "@/src/widgets/Sidebar";
 import { WebHeader } from "@/src/widgets/WebHeader/WebHeader";
 import { useMediaQuery } from "@gluestack-style/react";
 import { Href } from "expo-router";
-import { HomeIcon, MessageCircle, ThumbsUp, UserIcon } from "lucide-react-native";
-import { useState } from "react";
+import {
+  HomeIcon,
+  MessageCircle,
+  ThumbsUp,
+  UserIcon,
+} from "lucide-react-native";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Climb, fetchClimbs, likeClimb, deleteLikeClimb } from "./api/climbs";
 
 interface DashboardLayoutProps {
   title: string;
@@ -21,49 +26,61 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+const MainContent = ({ climbs }: { climbs: Climb[] }) => {
+  const [climbsState, setClimbsState] = useState<Climb[]>(climbs);
 
-const MainContent = () => {
+  const toggleLike = async (climbId: string, currentIsLiked: boolean) => {
+    try {
+      if (currentIsLiked) {
+        await deleteLikeClimb(climbId);
+      } else {
+        await likeClimb(climbId);
+      }
+
+      setClimbsState((prevClimbs) =>
+        prevClimbs.map((climb) =>
+          climb.id === climbId
+            ? {
+                ...climb,
+                isLiked: !currentIsLiked, // Actualiza el estado correctamente
+                likesCount: currentIsLiked
+                  ? climb.likesCount - 1
+                  : climb.likesCount + 1,
+              }
+            : climb
+        )
+      );
+    } catch (error) {
+      console.error("Error al actualizar like:", error);
+    }
+  };
+
   return (
-    <VStack
-      style={{
-        padding: 16,
-        gap: 13,
-        maxHeight: "100%", // Limita la altura máxima
-        overflowY: "auto", // Scroll solo en vertical
-        alignItems: "center",
-      }}
-    >
-      <GenericCard
-        title="Vía de Escalada A"
-        subtitle="Grado: 5.10a"
-        description="Promedio de calificación: 4.5 / 5"
-        primaryActionCount={120}
-        secondaryActionCount={8}
-        primaryIcon={ThumbsUp}
-        secondaryIcon={MessageCircle}
-      />
-      <GenericCard
-        title="Vía de Escalada B"
-        subtitle="Grado: 5.11b"
-        description="Promedio de calificación: 4.8 / 5"
-        primaryActionCount={180}
-        secondaryActionCount={12}
-        primaryIcon={ThumbsUp}
-        secondaryIcon={MessageCircle}
-      />
-      <GenericCard
-        title="Vía de Escalada C"
-        subtitle="Grado: 5.12a"
-        description="Promedio de calificación: 4.9 / 5"
-        primaryActionCount={200}
-        secondaryActionCount={15}
-        primaryIcon={ThumbsUp}
-        secondaryIcon={MessageCircle}
-      />
+    <VStack style={{ padding: 16, gap: 13, alignItems: "center" }}>
+      {climbsState.length === 0 ? (
+        <p>Cargando climbs...</p>
+      ) : (
+        climbsState.map((climb) => {
+          return (
+            <GenericCard
+              key={climb.id}
+              title={climb.title}
+              subtitle={`Grado: ${climb.grade}`}
+              description={`Descripción: ${climb.description}`}
+              primaryActionCount={climb.likesCount}
+              secondaryActionCount={climb.commentsCount}
+              primaryIcon={ThumbsUp}
+              secondaryIcon={MessageCircle}
+              onPrimaryAction={() => toggleLike(climb.id, climb.isLiked)}
+              onSecondaryAction={() => console.log("💬 Comentario abierto!")}
+              isLiked={!!climb.isLiked}
+            />
+          );
+        })
+      )}
     </VStack>
   );
 };
-
 
 export const DashboardLayout = ({
   title,
@@ -71,19 +88,12 @@ export const DashboardLayout = ({
   isHeaderVisible,
   children,
 }: DashboardLayoutProps) => {
-  // State to manage sidebar visibility
   const [isSidebarVisibleState, setIsSidebarVisible] =
     useState(isSidebarVisible);
-
-  // Function to toggle sidebar visibility
   const toggleSidebar = () => setIsSidebarVisible(!isSidebarVisibleState);
-
-  // Check screen size to determine if it’s a mobile layout
   const [isMediumScreen] = useMediaQuery({ maxWidth: 768 });
+  const { t } = useTranslation();
 
-  const { t } = useTranslation(); // Translation hook
-
-  // List of bottom navigation tabs
   const tabsList = [
     {
       iconText: t("Home"),
@@ -99,39 +109,47 @@ export const DashboardLayout = ({
 
   return (
     <VStack className="h-full w-full bg-background-0">
-      {/* Show mobile header on small screens */}
       {isMediumScreen && isHeaderVisible && (
         <Box className="md:hidden">
           <MobileHeader title={title} />
         </Box>
       )}
-
-      {/* Show web header on larger screens */}
       <Box className="hidden md:flex">
         <WebHeader toggleSidebar={toggleSidebar} title={title} />
       </Box>
-
-      {/* Main layout container */}
       <VStack className="h-full w-full">
         <HStack className="h-full w-full">
-          {/* Sidebar for larger screens */}
           <Box className="hidden md:flex h-full">
             {isSidebarVisibleState && <Sidebar tabs={tabsList} />}
           </Box>
-
-          {/* Main content area */}
           <VStack className="w-full">{children}</VStack>
         </HStack>
       </VStack>
-
-      {/* Show mobile footer on small screens */}
       {isMediumScreen && <MobileFooter tabs={tabsList} />}
     </VStack>
   );
 };
 
-// Main Dashboard component that wraps DashboardLayout with SafeAreaView
 export const Dashboard = () => {
+  const [climbs, setClimbs] = useState<Climb[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadClimbs = async () => {
+      try {
+        const response = await fetchClimbs();
+        if (response.climbs) setClimbs(response.climbs);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error cargando climbs");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadClimbs();
+  }, []);
+
   return (
     <SafeAreaView className="h-full w-full">
       <DashboardLayout
@@ -139,7 +157,13 @@ export const Dashboard = () => {
         isSidebarVisible={true}
         isHeaderVisible={true}
       >
-        <MainContent />
+        {loading ? (
+          <p>Cargando climbs...</p>
+        ) : error ? (
+          <p style={{ color: "red" }}>{error}</p>
+        ) : (
+          <MainContent climbs={climbs} />
+        )}
       </DashboardLayout>
     </SafeAreaView>
   );
