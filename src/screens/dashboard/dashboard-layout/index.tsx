@@ -55,22 +55,34 @@ export const DashboardLayout = ({
 
   return (
     <VStack className="h-full w-full bg-background-0">
+      {/* Show Mobile Header only on small screens */}
       {isMediumScreen && isHeaderVisible && (
         <Box className="md:hidden">
           <MobileHeader title={title} />
         </Box>
       )}
-      <Box className="hidden md:flex">
-        <WebHeader toggleSidebar={toggleSidebar} title={title} />
-      </Box>
+
+      {/* Show Web Header only on large screens */}
+      {!isMediumScreen &&(
+        <Box>
+          <WebHeader toggleSidebar={toggleSidebar} title={title} />
+        </Box>
+      )}
+
       <VStack className="h-full w-full">
         <HStack className="h-full w-full">
-          <Box className="hidden md:flex h-full">
-            {isSidebarVisibleState && <Sidebar tabs={tabsList} />}
-          </Box>
+          {/* Show Sidebar only on large screens */}
+          {!isMediumScreen && isSidebarVisibleState && (
+            <Box className="hidden md:flex h-full">
+              <Sidebar tabs={tabsList} />
+            </Box>
+          )}
+
           <VStack className="w-full">{children}</VStack>
         </HStack>
       </VStack>
+
+      {/* Show Mobile Footer only on small screens */}
       {isMediumScreen && <MobileFooter tabs={tabsList} />}
     </VStack>
   );
