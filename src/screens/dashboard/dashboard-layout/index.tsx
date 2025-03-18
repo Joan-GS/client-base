@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
 import { HStack } from "@/src/components/ui/hstack";
@@ -18,7 +19,7 @@ import { MobileFooter } from "@/src/widgets/MobileFooter";
 import { MobileHeader } from "@/src/widgets/MobileHeader";
 import { Sidebar } from "@/src/widgets/Sidebar";
 import { WebHeader } from "@/src/widgets/WebHeader/WebHeader";
-import { Box, ScrollView } from "@gluestack-ui/themed";
+import { Box, ScrollView, Spinner } from "@gluestack-ui/themed";
 
 interface DashboardLayoutProps {
   title: string;
@@ -75,12 +76,46 @@ export const DashboardLayout = ({
   );
 };
 
-const MainContent = ({ climbs }: { climbs: Climb[] }) => {
+const ITEMS_PER_PAGE = 3;
+
+const MainContent = () => {
   const { t } = useTranslation();
-  const [climbsState, setClimbsState] = useState<Climb[]>(climbs);
+  const [climbs, setClimbs] = useState<Climb[]>([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  useEffect(() => {
+    loadClimbs();
+  }, []);
+
+  const loadClimbs = async () => {
+    if (!hasMore) return;
+
+    try {
+      const response = await fetchClimbs(page, ITEMS_PER_PAGE);
+      const newClimbs = response.data || [];
+
+      setClimbs((prev) => [...prev, ...newClimbs]);
+      setHasMore(newClimbs.length === ITEMS_PER_PAGE);
+      setPage((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error loading climbs:", error);
+    } finally {
+      setLoading(false);
+      setIsFetchingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (isFetchingMore || !hasMore) return;
+    setIsFetchingMore(true);
+    loadClimbs();
+  };
 
   const handleToggleLike = async (climbId: string, isLiked: boolean) => {
-    setClimbsState((prevClimbs) =>
+    setClimbs((prevClimbs) =>
       prevClimbs.map((climb) =>
         climb.id === climbId
           ? {
@@ -96,78 +131,60 @@ const MainContent = ({ climbs }: { climbs: Climb[] }) => {
       await toggleLikeClimb(climbId, isLiked);
     } catch (error) {
       console.error("Error updating like:", error);
-
-      setClimbsState((prevClimbs) =>
-        prevClimbs.map((climb) =>
-          climb.id === climbId
-            ? {
-                ...climb,
-                isLiked: isLiked,
-                likesCount: isLiked
-                  ? climb.likesCount + 1
-                  : climb.likesCount - 1,
-              }
-            : climb
-        )
-      );
     }
   };
 
-  if (climbsState.length === 0) return <Text>{t("No climbs available")}</Text>;
+  if (loading) return <ActivityIndicator size="large" color="#000" />;
 
   return (
     <ScrollView
-      contentContainerStyle={{ flex: 1, alignItems: "center", gap: 20 }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        alignItems: "center",
+        gap: 20,
+        paddingVertical: 20,
+      }}
+      onScroll={({ nativeEvent }) => {
+        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        if (
+          layoutMeasurement.height + contentOffset.y >=
+          contentSize.height - 50
+        ) {
+          handleLoadMore();
+        }
+      }}
+      scrollEventThrottle={400}
     >
-      {climbsState.map((climb) => (
-        <GenericCard
-          key={climb.id}
-          title={climb.title}
-          subtitle={`Grade: ${climb.grade}`}
-          description={climb.description || ""}
-          primaryActionCount={climb.likesCount}
-          secondaryActionCount={climb.commentsCount}
-          primaryIcon={ThumbsUp}
-          secondaryIcon={MessageCircle}
-          onPrimaryAction={() => handleToggleLike(climb.id, climb.isLiked)}
-          onSecondaryAction={() => console.log("💬 Open comment!")}
-          isLiked={climb.isLiked}
-        />
-      ))}
+      {climbs.length === 0 ? (
+        <Text>{t("No climbs available")}</Text>
+      ) : (
+        climbs.map((climb) => (
+          <GenericCard
+            key={climb.id}
+            title={climb.title}
+            subtitle={`Grade: ${climb.grade}`}
+            description={climb.description || ""}
+            primaryActionCount={climb.likesCount}
+            secondaryActionCount={climb.commentsCount}
+            primaryIcon={ThumbsUp}
+            secondaryIcon={MessageCircle}
+            onPrimaryAction={() => handleToggleLike(climb.id, climb.isLiked)}
+            onSecondaryAction={() => console.log("💬 Open comment!")}
+            isLiked={climb.isLiked}
+          />
+        ))
+      )}
+
+      {isFetchingMore && <Spinner size="large" color="black" />}
     </ScrollView>
   );
 };
 
 export const Dashboard = () => {
-  const { t } = useTranslation();
-  const [climbs, setClimbs] = useState<Climb[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadClimbs = async () => {
-      try {
-        const response = await fetchClimbs();
-        setClimbs(response.data || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error loading climbs");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadClimbs();
-  }, []);
-
   return (
     <SafeAreaView className="h-full w-full">
       <DashboardLayout title="Dashboard">
-        {loading ? (
-          <Text>{t("Loading climbs...")}</Text>
-        ) : error ? (
-          <Text style={{ color: "red" }}>{error}</Text>
-        ) : (
-          <MainContent climbs={climbs} />
-        )}
+        <MainContent />
       </DashboardLayout>
     </SafeAreaView>
   );

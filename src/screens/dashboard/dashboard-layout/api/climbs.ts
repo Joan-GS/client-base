@@ -29,8 +29,8 @@ export interface ClimbsResponse {
 /**
  * Obtiene la lista de climbs desde el servidor.
  */
-export const fetchClimbs = async (): Promise<ClimbsResponse> => {
-  return handleRequest<ClimbsResponse>("/climbs");
+export const fetchClimbs = async (page = 1, pageSize = 3): Promise<ClimbsResponse> => {
+  return handleRequest<ClimbsResponse>(`/climbs?page=${page}&pageSize=${pageSize}`);
 };
 
 /**
