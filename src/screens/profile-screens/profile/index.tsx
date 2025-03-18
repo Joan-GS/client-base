@@ -15,6 +15,7 @@ import {
   ModalBodyStyled,
   ModalAvatarStyled,
   ModalAvatarPressableStyled,
+  LogoutButton,
 } from "./styles";
 import { Button, ButtonIcon, ButtonText } from "@/src/components/ui/button";
 import { EditIcon, Icon } from "@/src/components/ui/icon";
@@ -24,6 +25,9 @@ import { EditPhotoIcon } from "./assets/icons/edit-photo";
 import { Divider } from "@/src/components/ui/divider";
 import { useRecoilValue } from "recoil";
 import { userState } from "@/src/recoil/users.recoil";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import { LogOutIcon } from "lucide-react-native";
 
 const initialProfileData = {
   username: "John Doe",
@@ -36,10 +40,11 @@ const initialProfileData = {
 const ProfileScreen = () => {
   const { t } = useTranslation();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); // Estado para el modal de logout
   const [profileData, setProfileData] = useState(initialProfileData);
 
   const user = useRecoilValue(userState);
-  const username = user?.username || initialProfileData.username; // Fallback to the initial data if the username is not set
+  const username = user?.username || initialProfileData.username;
 
   const openEditModal = () => {
     setIsEditModalOpen(true);
@@ -47,6 +52,14 @@ const ProfileScreen = () => {
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
+  };
+
+  const openLogoutModal = () => {
+    setIsLogoutModalOpen(true);
+  };
+
+  const closeLogoutModal = () => {
+    setIsLogoutModalOpen(false);
   };
 
   const saveProfileChanges = () => {
@@ -58,15 +71,28 @@ const ProfileScreen = () => {
     closeEditModal();
   };
 
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem("loggedUser");
+      setIsLogoutModalOpen(false); // Cierra el modal antes de redirigir
+      router.replace("/auth/signin");
+    } catch (error) {
+      console.error("❌ Error al cerrar sesión:", error);
+    }
+  };
+
   return (
     <SafeAreaView className="h-full w-full">
+      {/* Botón de logout */}
+      <LogoutButton onPress={openLogoutModal}>
+        <ButtonIcon color="black" as={LogOutIcon} size="lg" />
+      </LogoutButton>
+
       <ProfileContainer>
         <ProfileHeader>
           <Avatar size="2xl" />
           <ProfileText>
-            <Text className="text-xl font-semibold">
-              {username}
-            </Text>
+            <Text className="text-xl font-semibold">{username}</Text>
           </ProfileText>
         </ProfileHeader>
 
@@ -117,6 +143,33 @@ const ProfileScreen = () => {
         </Button>
       </ProfileContainer>
 
+      {/* Modal de Confirmación de Logout */}
+      {isLogoutModalOpen && (
+        <ModalStyled
+          isOpen={isLogoutModalOpen}
+          onClose={closeLogoutModal}
+          closeOnOverlayClick={true}
+        >
+          <ModalContentStyled>
+            <ModalHeader>
+              <Text className="text-lg font-semibold">{t("Confirm Logout")}</Text>
+            </ModalHeader>
+            <ModalBodyStyled>
+              <Text className="text-sm">{t("Are you sure you want to log out?")}</Text>
+            </ModalBodyStyled>
+            <ModalFooter>
+              <Button variant="outline" onPress={closeLogoutModal}>
+                <ButtonText>{t("Cancel")}</ButtonText>
+              </Button>
+              <Button variant="solid" onPress={logout} className="ml-2">
+                <ButtonText>{t("Log Out")}</ButtonText>
+              </Button>
+            </ModalFooter>
+          </ModalContentStyled>
+        </ModalStyled>
+      )}
+
+      {/* Modal de Edición de Perfil */}
       {isEditModalOpen && (
         <ModalStyled
           isOpen={isEditModalOpen}
@@ -152,11 +205,7 @@ const ProfileScreen = () => {
               <Button variant="outline" onPress={closeEditModal}>
                 <ButtonText>{t("Cancel")}</ButtonText>
               </Button>
-              <Button
-                variant="solid"
-                onPress={saveProfileChanges}
-                className="ml-2"
-              >
+              <Button variant="solid" onPress={saveProfileChanges} className="ml-2">
                 <ButtonText>{t("Save")}</ButtonText>
               </Button>
             </ModalFooter>
@@ -170,11 +219,7 @@ const ProfileScreen = () => {
 export const Profile = () => {
   return (
     <SafeAreaView className="h-full w-full">
-      <DashboardLayout
-        title="Profile"
-        isSidebarVisible={true}
-        isHeaderVisible={false}
-      >
+      <DashboardLayout title="Profile" isSidebarVisible={true} isHeaderVisible={false}>
         <ProfileScreen />
       </DashboardLayout>
     </SafeAreaView>

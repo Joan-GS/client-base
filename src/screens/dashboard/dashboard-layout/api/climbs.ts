@@ -79,7 +79,7 @@ export const fetchClimbs = async (): Promise<ClimbsResponse> => {
             `Error fetching like status for climb ${climb.id}:`,
             error
           );
-          return { ...climb, isLiked: false }; // En caso de error, asumimos que no está likeado
+          return { ...climb, isLiked: false };
         }
       })
     );
@@ -110,7 +110,7 @@ export const likeClimb = async (climbId: string): Promise<void> => {
     if (!userId) throw new Error("User ID not found in token");
 
     const response = await fetch(
-      `http://localhost:8080/api/v1/climbs/${climbId}/like`,
+      `http://localhost:8080/api/v1/interactions/${climbId}/like`,
       {
         method: "POST",
         headers: {
@@ -149,7 +149,7 @@ export const deleteLikeClimb = async (climbId: string): Promise<void> => {
     const userId = decodedToken.sub;
 
     const response = await fetch(
-      `http://localhost:8080/api/v1/climbs/${climbId}/like`,
+      `http://localhost:8080/api/v1/interactions/${climbId}/like`,
       {
         method: "DELETE",
         headers: {

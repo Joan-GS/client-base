@@ -53,6 +53,17 @@ export const StatsItem = styled(VStack, {
 });
 
 // Button style for settings
+export const LogoutButton = styled(Button, {
+  position: "absolute",
+  top: 20,
+  right: 20,
+  backgroundColor: "transparent",
+  padding: 10,
+  borderRadius: 50,
+  zIndex: 1
+});
+
+// Button style for settings
 export const EditProfileButton = styled(Button, {
   width: "100%",
 });

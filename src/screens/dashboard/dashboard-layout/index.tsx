@@ -42,7 +42,7 @@ const MainContent = ({ climbs }: { climbs: Climb[] }) => {
           climb.id === climbId
             ? {
                 ...climb,
-                isLiked: !currentIsLiked, // Actualiza el estado correctamente
+                isLiked: !currentIsLiked,
                 likesCount: currentIsLiked
                   ? climb.likesCount - 1
                   : climb.likesCount + 1,
@@ -56,7 +56,7 @@ const MainContent = ({ climbs }: { climbs: Climb[] }) => {
   };
 
   return (
-    <VStack style={{ padding: 16, gap: 13, alignItems: "center" }}>
+    <VStack style={{ padding: 16, gap: 13, alignItems: "center",  overflowY: "auto",}}>
       {climbsState.length === 0 ? (
         <p>Cargando climbs...</p>
       ) : (
