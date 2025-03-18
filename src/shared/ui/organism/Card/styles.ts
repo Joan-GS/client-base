@@ -1,7 +1,5 @@
 import {
   Button,
-  Icon,
-  Box,
   Text,
   HStack,
   Image,

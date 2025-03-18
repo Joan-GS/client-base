@@ -20,7 +20,7 @@ interface GenericCardProps {
   secondaryIcon: React.ElementType;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
-  isLiked?: boolean; // ✅ Nueva prop
+  isLiked?: boolean;
 }
 
 const GenericCard: React.FC<GenericCardProps> = ({
@@ -34,7 +34,7 @@ const GenericCard: React.FC<GenericCardProps> = ({
   secondaryIcon,
   onPrimaryAction,
   onSecondaryAction,
-  isLiked, // ✅ Se usa para cambiar el color
+  isLiked,
 }) => {
   const imageSrc = imageUrl || "https://placehold.co/600x400";
 
