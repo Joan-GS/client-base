@@ -1,7 +1,9 @@
 {
   "name": "client-base",
-  "main": "expo-router/entry",
   "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -10,7 +12,8 @@
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
-    "i18nparser": "i18next 'src/**/*.{tsx,ts,jsx,js}' [-oc]"
+    "i18nparser": "i18next 'src/**/*.{tsx,ts,jsx,js}' [-oc]",
+    "link:core": "npm link @joan16/shared-base"
   },
   "jest": {
     "preset": "jest-expo"
@@ -50,6 +53,7 @@
     "@gluestack-ui/toast": "^1.0.8",
     "@gluestack-ui/tooltip": "^0.1.38",
     "@hookform/resolvers": "^3.10.0",
+    "@joan16/shared-base": "^1.0.1",
     "@legendapp/motion": "^2.4.0",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/bottom-tabs": "^7.2.0",

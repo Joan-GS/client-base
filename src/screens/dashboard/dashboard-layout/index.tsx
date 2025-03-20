@@ -10,6 +10,7 @@ import { Href } from "expo-router";
 import {
   HomeIcon,
   MessageCircle,
+  Plus,
   ThumbsUp,
   UserIcon,
 } from "lucide-react-native";
@@ -45,6 +46,11 @@ export const DashboardLayout = ({
       iconText: t("Home"),
       iconName: () => <HomeIcon size={24} color="black" />,
       route: "/dashboard/dashboard-layout" as Href,
+    },
+    {
+      iconText: t("Create"),
+      iconName: () => <Plus size={24} color="black" />,
+      route: "/create-climbs/create-climbs" as Href,
     },
     {
       iconText: t("Profile"),
