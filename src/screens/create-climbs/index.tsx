@@ -25,7 +25,7 @@ import {
 } from "./styles";
 
 import { CLIMBING_GRADE, STATUS, KILTER_TAGS } from "@joan16/shared-base";
-import { BadgeText, VStack } from "@gluestack-ui/themed";
+import { BadgeText, useMediaQuery, VStack } from "@gluestack-ui/themed";
 
 // Validation schema
 const climbSchema = Yup.object().shape({
@@ -42,6 +42,7 @@ const CreateClimbScreen = () => {
   const [selectedStatus, setSelectedStatus] = useState<STATUS>(STATUS.PUBLIC);
   const { t } = useTranslation();
   const toast = useToast();
+  const [isMediumScreen] = useMediaQuery({ maxWidth: 768 });
 
   const {
     control,
@@ -119,8 +120,7 @@ const CreateClimbScreen = () => {
       contentContainerStyle={{ paddingBottom: 20 }}
     >
       <Container>
-        <Title>{t("New Climb")}</Title>
-
+        {isMediumScreen && <Title>{t("Set Boulder")}</Title>}{" "}
         {/* Title Input */}
         <Controller
           name="title"
@@ -136,7 +136,6 @@ const CreateClimbScreen = () => {
           )}
         />
         {errors.title && <ErrorText>{errors.title.message}</ErrorText>}
-
         {/* Description Input */}
         <Controller
           name="description"
@@ -151,7 +150,6 @@ const CreateClimbScreen = () => {
             </Input>
           )}
         />
-
         {/* Grade Selection */}
         <VStack>
           <Label>{t("Select Grade")}:</Label>
@@ -173,7 +171,6 @@ const CreateClimbScreen = () => {
           </StyledTagsContainer>
           {errors.grade && <ErrorText>{errors.grade.message}</ErrorText>}
         </VStack>
-
         {/* Tag Selection */}
         <VStack>
           <Label>{t("Select up to 3 tags")}:</Label>
@@ -193,7 +190,6 @@ const CreateClimbScreen = () => {
             ))}
           </TagsContainer>
         </VStack>
-
         {/* Status Selection */}
         <VStack>
           <Label>{t("Select Status")}:</Label>
@@ -221,7 +217,6 @@ const CreateClimbScreen = () => {
             ))}
           </TagsContainer>
         </VStack>
-
         {/* Submit Button */}
         <VStack style={{ alignItems: "center", width: "100%", marginTop: 40 }}>
           <Button
@@ -229,7 +224,7 @@ const CreateClimbScreen = () => {
             isDisabled={isSubmitting}
           >
             <ButtonText>
-              {isSubmitting ? t("Creating...") : t("Create Climb")}
+              {isSubmitting ? t("Creating...") : t("Set Boulder")}
             </ButtonText>
           </Button>
         </VStack>
@@ -242,7 +237,7 @@ export const CreateClimb = () => {
   const { t } = useTranslation();
   return (
     <SafeAreaView className="h-full w-full">
-      <DashboardLayout title={t("Create Climb")} isSidebarVisible>
+      <DashboardLayout title={t("Set Boulder")} isSidebarVisible>
         <CreateClimbScreen />
       </DashboardLayout>
     </SafeAreaView>
