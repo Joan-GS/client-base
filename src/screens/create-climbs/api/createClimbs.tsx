@@ -5,7 +5,7 @@ export interface CreateClimbRequest {
   description?: string;
   ratingAverage: number;
   grade: string;
-  gradeAverage: number;
+  gradeAverage: string;
   tags: string[];
   status?: string;
   createdBy: string;
@@ -19,17 +19,21 @@ export interface ClimbResponse {
 }
 
 /**
- * Envía una solicitud para crear un nuevo climb.
+ * Sends a request to create a new climb.
  */
-export const createClimb = async (climbData: CreateClimbRequest): Promise<ClimbResponse> => {
-    const token = await getAuthToken();
-  
-    return handleRequest<ClimbResponse>("/climbs", "POST", {
-      ...climbData, // Datos del cuerpo de la petición
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+export const createClimb = async (
+  climbData: CreateClimbRequest
+): Promise<ClimbResponse> => {
+  const { userId } = await getAuthToken();
+
+  try {
+    const response = await handleRequest<ClimbResponse>("/climbs", "POST", {
+      ...climbData,
+      createdBy: userId,
     });
-  };
-  
+
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};

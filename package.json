@@ -1,9 +1,7 @@
 {
   "name": "client-base",
+  "main": "expo-router/entry",
   "version": "1.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": ["dist"],
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
