@@ -1,11 +1,8 @@
 import React, { useState, useCallback } from "react";
-import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { Input, InputField } from "@/src/components/ui/input";
 import { Button, ButtonText } from "@/src/components/ui/button";
 import { TouchableOpacity, ScrollView } from "react-native";
 import { router } from "expo-router";
-import { DashboardLayout } from "../../dashboard/dashboard-layout";
-import { createClimb, CreateClimbRequest } from "../api/createClimbs";
 import { useForm, Controller } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -26,6 +23,7 @@ import {
 
 import { CLIMBING_GRADE, STATUS, KILTER_TAGS } from "@joan16/shared-base";
 import { BadgeText, useMediaQuery, VStack } from "@gluestack-ui/themed";
+import { createClimb, CreateClimbRequest } from "../api/createClimbs";
 
 // Validation schema
 const climbSchema = Yup.object().shape({

@@ -22,6 +22,7 @@ export const FooterContainer = styled(HStack, {
   elevation: 5,
   backgroundColor: "$primary100",
   display: "flex",
+  zIndex: 10
 });
 
 // Style for each footer button
