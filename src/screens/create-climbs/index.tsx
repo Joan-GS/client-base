@@ -1,10 +1,15 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { Image, View, Dimensions, TouchableOpacity } from "react-native";
+import React, { useState, useCallback, useRef } from "react";
+import { Image, View, Animated } from "react-native";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "../dashboard/dashboard-layout";
 import { holdsData } from "./holds/holds";
 import Svg, { Circle } from "react-native-svg";
+import {
+  GestureHandlerRootView,
+  PinchGestureHandler,
+  GestureHandlerStateChangeEvent,
+} from "react-native-gesture-handler";
 
 const COORDINATE_MULTIPLIER = 7.5;
 const DELTA_X = 0;
@@ -21,7 +26,7 @@ const colors: Record<string, string> = {
 
 const colorKeys = Object.keys(colors);
 
-// Función para codificar el color en un número
+// Encode color to a number
 const encodeColor = (hex: string): number => {
   const r = parseInt(hex.slice(0, 2), 16) / 32;
   const g = parseInt(hex.slice(2, 4), 16) / 32;
@@ -29,19 +34,21 @@ const encodeColor = (hex: string): number => {
   return (r << 5) | (g << 2) | b;
 };
 
-// Función para calcular la suma de verificación (checksum)
+// Calculate checksum
 const checksum = (data: number[]): number => {
-  return ~data.reduce((acc, val) => (acc + val) & 255, 0) & 255;
+  return ~data.reduce((acc: number, val: number) => (acc + val) & 255, 0) & 255;
 };
 
-// Función para envolver los bytes de la data
+// Wrap bytes with start/end markers
 const wrapBytes = (data: number[]): number[] => {
   if (data.length > MESSAGE_BODY_MAX_LENGTH) return [];
   return [1, data.length, checksum(data), 2, ...data, 3];
 };
 
-// Función para preparar los bytes que serán enviados al Bluetooth
-const prepBytesV3 = (holds: { position: number; color: string }[]): number[] => {
+// Prepare Bluetooth packet
+const prepBytesV3 = (
+  holds: { position: number; color: string }[] 
+): number[] => {
   const packets: number[][] = [];
   let currentPacket: number[] = [82]; // PACKET_FIRST
 
@@ -68,10 +75,36 @@ const prepBytesV3 = (holds: { position: number; color: string }[]): number[] => 
   return packets.flatMap(wrapBytes);
 };
 
-export const CreateClimbScreen: React.FC = () => {
+const CreateClimbScreen: React.FC = () => {
   const { t } = useTranslation();
   const [selectedHolds, setSelectedHolds] = useState<Record<string, string>>({});
   const [hoveredHold, setHoveredHold] = useState<string | null>(null);
+
+  // Create scale and set min scale value
+  const [scale, setScale] = useState(new Animated.Value(1)); // Track scale for pinch zoom
+  const scaleValue = useRef(1); // Store scale value to keep track
+
+  const MIN_ZOOM = 1; // Minimum zoom level
+
+  const handlePinch = Animated.event(
+    [{ nativeEvent: { scale: scale } }],
+    {
+      useNativeDriver: false,  // Use false since we are handling scale with the Animated API
+      listener: (event) => {
+        const currentScale = event.nativeEvent.scale;
+        const newScale = Math.max(MIN_ZOOM, currentScale); // Prevent going below the min zoom
+        scale.setValue(newScale); // Update scale value
+        scaleValue.current = newScale; // Update ref value
+      },
+    }
+  );
+
+  const handlePinchStateChange = (event: GestureHandlerStateChangeEvent) => {
+    if (event.nativeEvent.state === 5) {
+      // state === 5 means the pinch gesture has ended
+      setScale(new Animated.Value(scaleValue.current)); // Keep the scale after the pinch gesture
+    }
+  };
 
   const handleHoldToggle = useCallback((id: string) => {
     setSelectedHolds((prev) => {
@@ -86,91 +119,110 @@ export const CreateClimbScreen: React.FC = () => {
             const hold = holdsData.find((h) => h.id === holdId);
             return hold ? { position: hold.position, color } : null;
           })
-          .filter((h): h is { position: number; color: string } => h !== null)
+          .filter(Boolean) as { position: number; color: string }[]
       );
 
       console.log(
         "Bluetooth Code:",
-        bluetoothCode.map((byte) => byte.toString(16).padStart(2, "0")).join(" ")
+        bluetoothCode
+          .map((byte) => byte.toString(16).padStart(2, "0"))
+          .join(" ")
       );
 
       return updatedHolds;
     });
   }, []);
 
-  const handleMouseEnter = useCallback((id: string) => {
-    setHoveredHold(id);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setHoveredHold(null);
-  }, []);
-
-
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", position: "relative" }}>
-      {/* Imagen de fondo */}
-      <Image
-        source={require("./layout_big_holds.png")}
-        style={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          resizeMode: "contain",
-          zIndex: 0,
-        }}
-      />
-      <Image
-        source={require("./layout_small_holds.png")}
-        style={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          resizeMode: "contain",
-          zIndex: 0,
-        }}
-      />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PinchGestureHandler
+        onGestureEvent={handlePinch}
+        onHandlerStateChange={handlePinchStateChange}
+      >
+        <Animated.View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            transform: [{ scale: scale }], // Apply zoom here
+          }}
+        >
+          <Image
+            source={require("./layout_big_holds.png")}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              resizeMode: "contain",
+              zIndex: 0,
+            }}
+          />
+          <Image
+            source={require("./layout_small_holds.png")}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              resizeMode: "contain",
+              zIndex: 0,
+            }}
+          />
+          <Svg
+            width={"100%"}
+            height={"100%"}
+            viewBox="0 0 1080 1170"
+            pointerEvents="auto"
+            style={{ zIndex: 1 }}
+          >
+            {holdsData.map(({ id, position, x, y }) => {
+              const selectedColor = selectedHolds[id];
+              const hexColor =
+                colors[selectedColor as keyof typeof colors] || "FFFFFF";
+              const [r, g, b] = [0, 2, 4].map((i) =>
+                parseInt(hexColor.slice(i, i + 2), 16)
+              );
 
-      {/* Componentes SVG */}
-      <Svg width={"100%"} height={"100%"} viewBox="0 0 1080 1170" pointerEvents="auto" style={{ zIndex: 1 }}>
-        {holdsData.map(({ id, position, x, y }) => {
-          const selectedColor = selectedHolds[id];
-          const hexColor = colors[selectedColor] || "FFFFFF";
-          const [r, g, b] = [0, 2, 4].map((i) => parseInt(hexColor.slice(i, i + 2), 16));
+              const isHovered = hoveredHold === id;
 
-          const isHovered = hoveredHold === id;
-          const fillColor = isHovered
-            ? `rgba(${r}, ${g}, ${b}, 0.4)`
-            : selectedColor && selectedColor !== "transparent"
-            ? `rgba(${r}, ${g}, ${b}, 0.2)`
-            : "transparent";
+              const fillColor = isHovered
+                ? `rgba(${r}, ${g}, ${b}, 0.4)`
+                : selectedColor && selectedColor !== "transparent"
+                ? `rgba(${r}, ${g}, ${b}, 0.2)`
+                : "transparent";
 
-          const strokeColor =
-            selectedColor && selectedColor !== "transparent" ? `rgb(${r}, ${g}, ${b})` : "transparent";
-          const strokeWidth = isHovered
-            ? 4
-            : selectedColor && selectedColor !== "transparent"
-            ? 3
-            : 0;
+              const strokeColor =
+                selectedColor && selectedColor !== "transparent"
+                  ? `rgb(${r}, ${g}, ${b})`
+                  : "transparent";
 
-          return (
-            <Circle
-              key={id}
-              cx={x * COORDINATE_MULTIPLIER + DELTA_X}
-              cy={-y * COORDINATE_MULTIPLIER + DELTA_Y}
-              r={35}
-              fill={fillColor}
-              stroke={strokeColor}
-              strokeWidth={strokeWidth}
-              onPress={() => handleHoldToggle(id)}
-              onMouseEnter={() => handleMouseEnter(id)}
-              onMouseLeave={handleMouseLeave}
-              pointerEvents="auto"
-            />
-          );
-        })}
-      </Svg>
-    </View>
+              const strokeWidth = isHovered
+                ? 4
+                : selectedColor && selectedColor !== "transparent"
+                ? 3
+                : 0;
+
+              return (
+                <Circle
+                  key={id}
+                  cx={x * COORDINATE_MULTIPLIER + DELTA_X}
+                  cy={-y * COORDINATE_MULTIPLIER + DELTA_Y}
+                  r={33}
+                  fill={fillColor}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                  onPress={() => handleHoldToggle(id)}
+                  onPressIn={() => setHoveredHold(id)}
+                  onPressOut={() => setHoveredHold(null)}
+                  pointerEvents="auto"
+                  onResponderRelease={() => handleHoldToggle(id)}
+                  />
+              );
+            })}
+          </Svg>
+        </Animated.View>
+      </PinchGestureHandler>
+    </GestureHandlerRootView>
   );
 };
 
