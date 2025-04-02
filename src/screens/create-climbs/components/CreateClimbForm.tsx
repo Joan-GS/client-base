@@ -19,11 +19,18 @@ import {
   GradeBadge,
   StatusBadge,
   StyledTagsContainer,
-} from "../styles";
+  BackButton,
+} from "./styles";
 
 import { CLIMBING_GRADE, STATUS, KILTER_TAGS } from "@joan16/shared-base";
 import { BadgeText, useMediaQuery, VStack } from "@gluestack-ui/themed";
 import { createClimb, CreateClimbRequest } from "../api/createClimbs";
+import { ArrowLeft } from "lucide-react-native";
+
+interface CreateClimbFormProps {
+  onBack?: () => void;
+  bluetoothData?: string;
+}
 
 // Validation schema
 const climbSchema = Yup.object().shape({
@@ -35,7 +42,7 @@ const climbSchema = Yup.object().shape({
   tags: Yup.array().max(3, "Maximum 3 tags"),
 });
 
-export const CreateClimbForm = () => {
+export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, bluetoothData }) => {
   const [selectedTags, setSelectedTags] = useState<KILTER_TAGS[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<STATUS>(STATUS.PUBLIC);
   const { t } = useTranslation();
@@ -83,6 +90,7 @@ export const CreateClimbForm = () => {
 
   // Handle form submission
   const onSubmit = async (data: any) => {
+    console.log("Form data:", bluetoothData);
     try {
       const climbData: CreateClimbRequest = {
         title: data.title,
@@ -117,7 +125,14 @@ export const CreateClimbForm = () => {
       style={{ flex: 1 }}
       contentContainerStyle={{ paddingBottom: 20 }}
     >
+       {/* Botón de volver atrás */}
+       {onBack && (
+          <BackButton onPress={onBack}>
+            <ArrowLeft size={24} color="black" />
+          </BackButton>
+        )}
       <Container>
+       
         {isMediumScreen && <Title>{t("Set Boulder")}</Title>}{" "}
         {/* Title Input */}
         <Controller
@@ -230,5 +245,3 @@ export const CreateClimbForm = () => {
     </ScrollView>
   );
 };
-
-

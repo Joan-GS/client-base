@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo } from "react";
-import { Image, View, Animated, Dimensions } from "react-native";
+import { Image, View, Animated, Dimensions, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "../dashboard/dashboard-layout";
@@ -20,9 +20,9 @@ import {
   StyledButtonGroup,
   StyledQuickActionButton,
 } from "./styles";
+import { CreateClimbForm } from "./components/CreateClimbForm";
 
 // ====================== CONSTANTS ======================
-
 const COORDINATE_MULTIPLIER = 7.5;
 const DELTA_X = 0;
 const DELTA_Y = 1170;
@@ -45,7 +45,6 @@ type HoldSelection = Record<string, keyof typeof COLOR_DEFINITIONS>;
 type Point = { x: number; y: number };
 
 // ====================== UTILITY FUNCTIONS ======================
-
 const encodeColor = (hex: string): number => {
   const r = parseInt(hex.slice(0, 2), 16) / 32;
   const g = parseInt(hex.slice(2, 4), 16) / 32;
@@ -63,7 +62,7 @@ const wrapBytes = (data: number[]): number[] => {
 
 const prepareBluetoothData = (
   holds: { position: number; color: keyof typeof COLOR_DEFINITIONS }[]
-): number[] => {
+): string => {
   const packets: number[][] = [];
   let currentPacket: number[] = [82]; // PACKET_FIRST
 
@@ -87,17 +86,29 @@ const prepareBluetoothData = (
     packets[packets.length - 1][0] = 83; // PACKET_LAST
   }
 
-  return packets.flatMap(wrapBytes);
+  const byteArray = packets.flatMap(wrapBytes);
+  return byteArray.map(b => b.toString(16).padStart(2, "0")).join(" ");
 };
 
-// ====================== MAIN COMPONENT ======================
+// ====================== MAIN COMPONENTS ======================
+interface CreateClimbScreenProps {
+  onNext: (data: string) => void;
+  selectedHolds: HoldSelection;
+  setSelectedHolds: React.Dispatch<React.SetStateAction<HoldSelection>>;
+  selectionHistory: string[];
+  setSelectionHistory: React.Dispatch<React.SetStateAction<string[]>>;
+}
 
-const CreateClimbScreen: React.FC = () => {
-  const { t } = useTranslation();
-  const [selectedHolds, setSelectedHolds] = useState<HoldSelection>({});
-  const [selectionHistory, setSelectionHistory] = useState<string[]>([]);
+const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({ 
+  onNext, 
+  selectedHolds, 
+  setSelectedHolds,
+  selectionHistory,
+  setSelectionHistory
+}) => {  
   const [hoveredHold, setHoveredHold] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [bluetoothData, setBluetoothData] = useState<string>("");
 
   // Animation refs
   const scale = useRef(new Animated.Value(1)).current;
@@ -195,11 +206,10 @@ const CreateClimbScreen: React.FC = () => {
       color: keyof typeof COLOR_DEFINITIONS;
     }[];
 
-    const bluetoothData = prepareBluetoothData(selectedHoldsData);
-    console.log(
-      "Bluetooth Data:",
-      bluetoothData.map((b) => b.toString(16).padStart(2, "0")).join(" ")
-    );
+    const data = prepareBluetoothData(selectedHoldsData);
+    setBluetoothData(data);
+    
+    console.log("Bluetooth Data:", data);
   }, []);
 
   const handleHoldToggle = useCallback(
@@ -282,9 +292,13 @@ const CreateClimbScreen: React.FC = () => {
     [selectedHolds, hoveredHold, handleHoldToggle]
   );
 
+  const handleNextPress = () => {
+    onNext(bluetoothData);
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StyledQuickActionButton>
+      <StyledQuickActionButton onPress={handleNextPress}>
         <StepForward size={24} color="green" />
       </StyledQuickActionButton>
 
@@ -374,10 +388,37 @@ const CreateClimbScreen: React.FC = () => {
 
 export const CreateClimb: React.FC = () => {
   const { t } = useTranslation();
+  const [showForm, setShowForm] = useState(false);
+  const [bluetoothData, setBluetoothData] = useState<string>("");
+  const [selectedHolds, setSelectedHolds] = useState<HoldSelection>({});
+  const [selectionHistory, setSelectionHistory] = useState<string[]>([]);
+
+  const handleNext = (data: string) => {
+    setBluetoothData(data);
+    setShowForm(true);
+  };
+
+  const handleBack = () => {
+    setShowForm(false);
+  };
+
   return (
     <SafeAreaView className="h-full w-full">
       <DashboardLayout title={t("Set Boulder")} isSidebarVisible>
-        <CreateClimbScreen />
+        {!showForm ? (
+          <CreateClimbScreen 
+            onNext={handleNext}
+            selectedHolds={selectedHolds}
+            setSelectedHolds={setSelectedHolds}
+            selectionHistory={selectionHistory}
+            setSelectionHistory={setSelectionHistory}
+          />
+        ) : (
+          <CreateClimbForm 
+            onBack={handleBack} 
+            bluetoothData={bluetoothData} 
+          />
+        )}
       </DashboardLayout>
     </SafeAreaView>
   );
