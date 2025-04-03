@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { Input, InputField } from "@/src/components/ui/input";
 import { Button, ButtonText } from "@/src/components/ui/button";
-import { TouchableOpacity, ScrollView } from "react-native";
+import { TouchableOpacity, ScrollView, Text  } from "react-native";
 import { router } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import * as Yup from "yup";
@@ -121,20 +121,19 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
     showToast("Please check the form fields and try again.", "error");
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ paddingBottom: 20 }}
-    >
-       {/* Botón de volver atrás */}
-       {onBack && (
-          <BackButton onPress={onBack}>
-            <ArrowLeft size={24} color="black" />
-          </BackButton>
-        )}
+    <ScrollView style={{ flex: 1 }}>
+      {onBack && (
+        <BackButton onPress={onBack}>
+          <ArrowLeft size={24} color="black" />
+        </BackButton>
+      )}
       <Container>
-       
-        {isMediumScreen && <Title>{t("Set Boulder")}</Title>}{" "}
-        {/* Title Input */}
+        {isMediumScreen && (
+          <Title>
+            <Text>{t("Set Boulder")}</Text>
+          </Title>
+        )}
+        
         <Controller
           name="title"
           control={control}
@@ -148,8 +147,12 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
             </Input>
           )}
         />
-        {errors.title && <ErrorText>{errors.title.message}</ErrorText>}
-        {/* Description Input */}
+        {errors.title && (
+          <ErrorText>
+            <Text>{errors.title.message}</Text>
+          </ErrorText>
+        )}
+
         <Controller
           name="description"
           control={control}
@@ -163,9 +166,11 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
             </Input>
           )}
         />
-        {/* Grade Selection */}
+
         <VStack>
-          <Label>{t("Select Grade")}:</Label>
+          <Label>
+            <Text>{t("Select Grade")}:</Text>
+          </Label>
           <StyledTagsContainer>
             {Object.values(CLIMBING_GRADE).map((grade) => (
               <Controller
@@ -175,18 +180,26 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
                 render={({ field }) => (
                   <TouchableOpacity onPress={() => field.onChange(grade)}>
                     <GradeBadge selected={field.value === grade}>
-                      <BadgeText>{grade}</BadgeText>
+                      <BadgeText>
+                        <Text>{grade}</Text>
+                      </BadgeText>
                     </GradeBadge>
                   </TouchableOpacity>
                 )}
               />
             ))}
           </StyledTagsContainer>
-          {errors.grade && <ErrorText>{errors.grade.message}</ErrorText>}
+          {errors.grade && (
+            <ErrorText>
+              <Text>{errors.grade.message}</Text>
+            </ErrorText>
+          )}
         </VStack>
-        {/* Tag Selection */}
+
         <VStack>
-          <Label>{t("Select up to 3 tags")}:</Label>
+          <Label>
+            <Text>{t("Select up to 3 tags")}:</Text>
+          </Label>
           <TagsContainer>
             {Object.values(KILTER_TAGS).map((tag) => (
               <TouchableOpacity key={tag} onPress={() => toggleTag(tag)}>
@@ -197,15 +210,19 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
                       : "#E0E0E0",
                   }}
                 >
-                  <BadgeText>{tag}</BadgeText>
+                  <BadgeText>
+                    <Text>{tag}</Text>
+                  </BadgeText>
                 </TagBadge>
               </TouchableOpacity>
             ))}
           </TagsContainer>
         </VStack>
-        {/* Status Selection */}
+
         <VStack>
-          <Label>{t("Select Status")}:</Label>
+          <Label>
+            <Text>{t("Select Status")}:</Text>
+          </Label>
           <TagsContainer>
             {Object.values(STATUS).map((status) => (
               <TouchableOpacity
@@ -224,20 +241,22 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
                         : "#E0E0E0",
                   }}
                 >
-                  <BadgeText>{t(status)}</BadgeText>
+                  <BadgeText>
+                    <Text>{t(status)}</Text>
+                  </BadgeText>
                 </StatusBadge>
               </TouchableOpacity>
             ))}
           </TagsContainer>
         </VStack>
-        {/* Submit Button */}
+
         <VStack style={{ alignItems: "center", width: "100%", marginTop: 40 }}>
           <Button
             onPress={handleSubmit(onSubmit, onError)}
             isDisabled={isSubmitting}
           >
             <ButtonText>
-              {isSubmitting ? t("Creating...") : t("Set Boulder")}
+              <Text>{isSubmitting ? t("Creating...") : t("Set Boulder")}</Text>
             </ButtonText>
           </Button>
         </VStack>

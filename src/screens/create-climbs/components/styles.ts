@@ -19,7 +19,7 @@ export const Container = styled(VStack, {
 export const Title = styled(Text, {
   fontSize: 26,
   fontWeight: "bold",
-  marginBottom: 18,
+  marginTop: 20,
   textAlign: "center",
 });
 

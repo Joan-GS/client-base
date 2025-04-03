@@ -234,22 +234,29 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
   );
 
   const resetHolds = useCallback(() => {
-    setSelectedHolds({});
     setSelectionHistory([]);
+    setSelectedHolds({});
     updateBluetoothData({});
   }, [updateBluetoothData]);
 
   const undoLastHold = useCallback(() => {
     if (selectionHistory.length === 0) return;
-
-    const lastHoldId = selectionHistory[selectionHistory.length - 1];
-    setSelectedHolds((prev) => {
-      const newHolds = { ...prev };
-      delete newHolds[lastHoldId];
-      updateBluetoothData(newHolds);
-      return newHolds;
+  
+    setSelectionHistory((prev) => {
+      const newHistory = [...prev];
+      const lastHoldId = newHistory.pop();
+      
+      setSelectedHolds((prevHolds) => {
+        const newHolds = { ...prevHolds };
+        if (lastHoldId) {
+          delete newHolds[lastHoldId];
+        }
+        updateBluetoothData(newHolds);
+        return newHolds;
+      });
+  
+      return newHistory;
     });
-    setSelectionHistory((prev) => prev.slice(0, -1));
   }, [selectionHistory, updateBluetoothData]);
 
   // Render holds
