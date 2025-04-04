@@ -1,13 +1,15 @@
 import React, { useState, useCallback } from "react";
 import { Input, InputField } from "@/src/components/ui/input";
 import { Button, ButtonText } from "@/src/components/ui/button";
-import { TouchableOpacity, ScrollView, Text  } from "react-native";
+import { TouchableOpacity, ScrollView  } from "react-native";
 import { router } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import * as Yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useToast, Toast, ToastTitle } from "@/src/components/ui/toast";
 import { useTranslation } from "react-i18next";
+import { Text } from "@gluestack-ui/themed";
+
 
 import {
   Container,
@@ -26,11 +28,17 @@ import { CLIMBING_GRADE, STATUS, KILTER_TAGS } from "@joan16/shared-base";
 import { BadgeText, useMediaQuery, VStack } from "@gluestack-ui/themed";
 import { createClimb, CreateClimbRequest } from "../api/createClimbs";
 import { ArrowLeft } from "lucide-react-native";
+import { HoldSelection } from "..";
 
 interface CreateClimbFormProps {
-  onBack?: () => void;
-  bluetoothData?: string;
+  onBack: () => void;
+  climbData: {
+    bluetoothData: string;
+    snapshotUri: string | null;
+    selectedHolds: HoldSelection;
+  } | null;
 }
+
 
 // Validation schema
 const climbSchema = Yup.object().shape({
@@ -42,7 +50,7 @@ const climbSchema = Yup.object().shape({
   tags: Yup.array().max(3, "Maximum 3 tags"),
 });
 
-export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, bluetoothData }) => {
+export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, climbData  }) => {
   const [selectedTags, setSelectedTags] = useState<KILTER_TAGS[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<STATUS>(STATUS.PUBLIC);
   const { t } = useTranslation();
@@ -90,9 +98,15 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
 
   // Handle form submission
   const onSubmit = async (data: any) => {
-    console.log("Form data:", bluetoothData);
     try {
-      const climbData: CreateClimbRequest = {
+      if (!climbData) {
+        showToast("Climb data is missing", "error");
+        return;
+      }
+
+      console.log("Climb data:", climbData);
+  
+      const newClimbData: CreateClimbRequest = {
         title: data.title,
         description: data.description || "",
         ratingAverage: 0,
@@ -100,13 +114,14 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
         gradeAverage: data.grade,
         tags: selectedTags.map(String),
         status: selectedStatus,
+        bluetoothCode: climbData.bluetoothData,
+        imageUrl: climbData.snapshotUri || null,
         createdBy: "67de80abfdf66272446aad0e",
       };
-
-      await createClimb(climbData);
-
+  
+      await createClimb(newClimbData);
       showToast("The climb was created successfully!", "success");
-
+  
       reset();
       setSelectedTags([]);
       setSelectedStatus(STATUS.PUBLIC);
@@ -115,6 +130,7 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
       showToast("Could not create the climb", "error");
     }
   };
+  
 
   // Handle form validation errors
   const onError = () =>
@@ -130,7 +146,7 @@ export const CreateClimbForm: React.FC<CreateClimbFormProps> = ({ onBack, blueto
       <Container>
         {isMediumScreen && (
           <Title>
-            <Text>{t("Set Boulder")}</Text>
+            {t("Set Boulder")}
           </Title>
         )}
         

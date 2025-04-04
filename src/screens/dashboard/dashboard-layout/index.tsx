@@ -189,6 +189,7 @@ const MainContent = () => {
             onPrimaryAction={() => handleToggleLike(climb.id, climb.isLiked)}
             onSecondaryAction={() => console.log("💬 Open comment!")}
             isLiked={climb.isLiked}
+            imageUrl={climb.imageUrl || "https://placehold.co/600x400"}
           />
         ))
       )}

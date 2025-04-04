@@ -10,14 +10,14 @@ export const Container = styled(VStack, {
   padding: 20,
   width: "100%",
   gap: "$5",
-  marginBottom: "$24",
+  marginBottom: "$20",
   alignSelf: "center",
   maxWidth: 760,
 });
 
 // Main title for the screen
 export const Title = styled(Text, {
-  fontSize: 26,
+  fontSize: 22,
   fontWeight: "bold",
   marginTop: 20,
   textAlign: "center",

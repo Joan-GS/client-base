@@ -2,6 +2,7 @@ import { getAuthToken, handleRequest } from "@/src/utils/api/https.utils";
 
 
 export interface Climb {
+  imageUrl: string;
   id: string;
   title: string;
   description?: string;

@@ -1,5 +1,11 @@
 import React, { useState, useCallback, useRef, useMemo } from "react";
-import { Image, View, Animated, Dimensions, TouchableOpacity } from "react-native";
+import {
+  Image,
+  View,
+  Animated,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { useTranslation } from "react-i18next";
 import { DashboardLayout } from "../dashboard/dashboard-layout";
@@ -12,7 +18,7 @@ import {
   State,
 } from "react-native-gesture-handler";
 import { StepForward, Trash, Undo } from "lucide-react-native";
-import { Divider, useMediaQuery } from "@gluestack-ui/themed";
+import { Divider } from "@gluestack-ui/themed";
 import { DraggableFloatingBadge } from "@/src/shared/ui/organism/DraggableFloatingBadge/DraggableFloatingBadge";
 import {
   AnimatedWallContainer,
@@ -21,6 +27,7 @@ import {
   StyledQuickActionButton,
 } from "./styles";
 import { CreateClimbForm } from "./components/CreateClimbForm";
+import ViewShot from "react-native-view-shot";
 
 // ====================== CONSTANTS ======================
 const COORDINATE_MULTIPLIER = 7.5;
@@ -41,7 +48,7 @@ const COLOR_KEYS = Object.keys(COLOR_DEFINITIONS) as Array<
   keyof typeof COLOR_DEFINITIONS
 >;
 
-type HoldSelection = Record<string, keyof typeof COLOR_DEFINITIONS>;
+export type HoldSelection = Record<string, keyof typeof COLOR_DEFINITIONS>;
 type Point = { x: number; y: number };
 
 // ====================== UTILITY FUNCTIONS ======================
@@ -87,25 +94,31 @@ const prepareBluetoothData = (
   }
 
   const byteArray = packets.flatMap(wrapBytes);
-  return byteArray.map(b => b.toString(16).padStart(2, "0")).join(" ");
+  return byteArray.map((b) => b.toString(16).padStart(2, "0")).join(" ");
 };
 
 // ====================== MAIN COMPONENTS ======================
+interface ClimbData {
+  bluetoothData: string;
+  snapshotUri: string | null;
+  selectedHolds: HoldSelection;
+}
+
 interface CreateClimbScreenProps {
-  onNext: (data: string) => void;
+  onNext: (data: ClimbData) => void;
   selectedHolds: HoldSelection;
   setSelectedHolds: React.Dispatch<React.SetStateAction<HoldSelection>>;
   selectionHistory: string[];
   setSelectionHistory: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({ 
-  onNext, 
-  selectedHolds, 
+const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
+  onNext,
+  selectedHolds,
   setSelectedHolds,
   selectionHistory,
-  setSelectionHistory
-}) => {  
+  setSelectionHistory,
+}) => {
   const [hoveredHold, setHoveredHold] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const [bluetoothData, setBluetoothData] = useState<string>("");
@@ -118,6 +131,8 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
   const lastTranslate = useRef<Point>({ x: 0, y: 0 });
   const panGestureRef = useRef(null);
   const pinchGestureRef = useRef(null);
+
+  const viewShotRef = useRef<ViewShot>(null);
 
   // Zoom constants
   const MIN_ZOOM = 1;
@@ -208,7 +223,7 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
 
     const data = prepareBluetoothData(selectedHoldsData);
     setBluetoothData(data);
-    
+
     console.log("Bluetooth Data:", data);
   }, []);
 
@@ -241,11 +256,11 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
 
   const undoLastHold = useCallback(() => {
     if (selectionHistory.length === 0) return;
-  
+
     setSelectionHistory((prev) => {
       const newHistory = [...prev];
       const lastHoldId = newHistory.pop();
-      
+
       setSelectedHolds((prevHolds) => {
         const newHolds = { ...prevHolds };
         if (lastHoldId) {
@@ -254,7 +269,7 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
         updateBluetoothData(newHolds);
         return newHolds;
       });
-  
+
       return newHistory;
     });
   }, [selectionHistory, updateBluetoothData]);
@@ -291,16 +306,30 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
             onPress={() => handleHoldToggle(id)}
             onPressIn={() => setHoveredHold(id)}
             onPressOut={() => setHoveredHold(null)}
+            onStartShouldSetResponder={() => true}
             onResponderRelease={() => handleHoldToggle(id)}
-            cursor="pointer"
           />
         );
       }),
     [selectedHolds, hoveredHold, handleHoldToggle]
   );
 
-  const handleNextPress = () => {
-    onNext(bluetoothData);
+  const handleNextPress = async () => {
+    try {
+      const uri = await viewShotRef.current?.capture?.();
+      onNext({
+        bluetoothData,
+        snapshotUri: uri || null,
+        selectedHolds,
+      });
+    } catch (error) {
+      console.error("Error capturing image:", error);
+      onNext({
+        bluetoothData,
+        snapshotUri: null,
+        selectedHolds,
+      });
+    }
   };
 
   return (
@@ -341,52 +370,57 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
         minDist={10}
         avgTouches
         enabled={isZoomed}
-        simultaneousHandlers={pinchGestureRef}
-      >
+        >
         <View style={{ flex: 1 }}>
-          <PinchGestureHandler
-            ref={pinchGestureRef}
-            onGestureEvent={onPinchGestureEvent}
-            onHandlerStateChange={onPinchHandlerStateChange}
-            simultaneousHandlers={panGestureRef}
+          <ViewShot
+            ref={viewShotRef}
+            options={{ format: "png", quality: 0.9 }}
+            style={{ flex: 1 }}
           >
-            <AnimatedWallContainer
-              style={{
-                transform: [
-                  { scale: scale },
-                  { translateX: translateX },
-                  { translateY: translateY },
-                ],
-              }}
+            <PinchGestureHandler
+              ref={pinchGestureRef}
+              onGestureEvent={onPinchGestureEvent}
+              onHandlerStateChange={onPinchHandlerStateChange}
+              simultaneousHandlers={panGestureRef}
             >
-              <Image
-                source={require("./layout_big_holds.png")}
+              <AnimatedWallContainer
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  position: "absolute",
-                  resizeMode: "contain",
+                  transform: [
+                    { scale: scale },
+                    { translateX: translateX },
+                    { translateY: translateY },
+                  ],
                 }}
-              />
-              <Image
-                source={require("./layout_small_holds.png")}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  position: "absolute",
-                  resizeMode: "contain",
-                }}
-              />
-              <Svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 1080 1170"
-                style={{ zIndex: 1 }}
               >
-                {renderedHolds}
-              </Svg>
-            </AnimatedWallContainer>
-          </PinchGestureHandler>
+                <Image
+                  source={require("./layout_big_holds.png")}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    position: "absolute",
+                    resizeMode: "contain",
+                  }}
+                />
+                <Image
+                  source={require("./layout_small_holds.png")}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    position: "absolute",
+                    resizeMode: "contain",
+                  }}
+                />
+                <Svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 1080 1170"
+                  style={{ zIndex: 1 }}
+                >
+                  {renderedHolds}
+                </Svg>
+              </AnimatedWallContainer>
+            </PinchGestureHandler>
+          </ViewShot>
         </View>
       </PanGestureHandler>
     </GestureHandlerRootView>
@@ -396,12 +430,12 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
 export const CreateClimb: React.FC = () => {
   const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
-  const [bluetoothData, setBluetoothData] = useState<string>("");
   const [selectedHolds, setSelectedHolds] = useState<HoldSelection>({});
   const [selectionHistory, setSelectionHistory] = useState<string[]>([]);
+  const [climbData, setClimbData] = useState<ClimbData | null>(null);
 
-  const handleNext = (data: string) => {
-    setBluetoothData(data);
+  const handleNext = (data: ClimbData) => {
+    setClimbData(data);
     setShowForm(true);
   };
 
@@ -413,7 +447,7 @@ export const CreateClimb: React.FC = () => {
     <SafeAreaView className="h-full w-full">
       <DashboardLayout title={t("Set Boulder")} isSidebarVisible>
         {!showForm ? (
-          <CreateClimbScreen 
+          <CreateClimbScreen
             onNext={handleNext}
             selectedHolds={selectedHolds}
             setSelectedHolds={setSelectedHolds}
@@ -421,10 +455,7 @@ export const CreateClimb: React.FC = () => {
             setSelectionHistory={setSelectionHistory}
           />
         ) : (
-          <CreateClimbForm 
-            onBack={handleBack} 
-            bluetoothData={bluetoothData} 
-          />
+          <CreateClimbForm onBack={handleBack} climbData={climbData} />
         )}
       </DashboardLayout>
     </SafeAreaView>

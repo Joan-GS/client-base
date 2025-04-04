@@ -9,7 +9,10 @@ export interface CreateClimbRequest {
   tags: string[];
   status?: string;
   createdBy: string;
+  bluetoothCode: string;
+  imageUrl?: string | null;
 }
+
 
 export interface ClimbResponse {
   message: string;

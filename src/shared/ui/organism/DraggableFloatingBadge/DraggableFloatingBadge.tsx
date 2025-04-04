@@ -113,14 +113,12 @@ export const DraggableFloatingBadge = ({
     }
   };
 
-  const webStyle = Platform.OS === "web" ? { cursor: "move" as const } : {};
 
   const badgeStyle: ViewStyle = {
     position: "absolute",
     top: position.y,
     left: position.x,
     zIndex: 1000,
-    ...webStyle,
   };
 
   return (

@@ -25,8 +25,9 @@ export const StyledCard = styled(Card, {
 
 export const StyledImage = styled(Image, {
   width: "100%",
-  aspectRatio: 352 / 234,
+  height: 450,
   borderRadius: 8,
+  resizeMode: "contain",
 });
 
 export const StyledTitle = styled(Text, {

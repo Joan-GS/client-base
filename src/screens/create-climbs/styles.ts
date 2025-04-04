@@ -42,7 +42,7 @@ export const StyledActionButton = styled(Pressable, {
     ':hover': {
       backgroundColor: "$backgroundLight50",
     }
-  }
+  },
 
 });
 
