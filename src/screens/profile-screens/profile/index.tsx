@@ -27,7 +27,9 @@ import { useRecoilValue } from "recoil";
 import { userState } from "@/src/recoil/users.recoil";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { LogOutIcon } from "lucide-react-native";
+import { LogOutIcon, MessageCircle, ThumbsUp } from "lucide-react-native";
+import { ScrollView, View } from "@gluestack-ui/themed";
+import GenericCard from "@/src/shared/ui/organism/Card/Card";
 
 const initialProfileData = {
   username: "John Doe",
@@ -40,11 +42,15 @@ const initialProfileData = {
 const ProfileScreen = () => {
   const { t } = useTranslation();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); // Estado para el modal de logout
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profileData, setProfileData] = useState(initialProfileData);
 
   const user = useRecoilValue(userState);
   const username = user?.username || initialProfileData.username;
+  const followersCount = user?.followers?.length ?? 0;
+  const followingCount = user?.following?.length ?? 0;
+  const createdRoutesCount = user?.myClimbs?.data?.length ?? 0;
+  const completedRoutesCount = user?.ascensions?.length ?? 0;
 
   const openEditModal = () => {
     setIsEditModalOpen(true);
@@ -98,35 +104,23 @@ const ProfileScreen = () => {
 
         <StatsSection>
           <StatsItem>
-            <Text className="font-semibold text-lg">
-              {profileData.createdRoutes}
-            </Text>
+            <Text className="font-semibold text-lg">{followersCount}</Text>
             <Text className="text-sm text-gray-500">{t("Followers")}</Text>
           </StatsItem>
 
-          <Divider className="my-0.4" orientation="vertical" />
-
           <StatsItem>
-            <Text className="font-semibold text-lg">
-              {profileData.createdRoutes}
-            </Text>
+            <Text className="font-semibold text-lg">{followingCount}</Text>
             <Text className="text-sm text-gray-500">{t("Following")}</Text>
           </StatsItem>
 
-          <Divider className="my-0.4" orientation="vertical" />
-
           <StatsItem>
-            <Text className="font-semibold text-lg">
-              {profileData.completedRoutes}
-            </Text>
+            <Text className="font-semibold text-lg">{createdRoutesCount}</Text>
             <Text className="text-sm text-gray-500">{t("My Climbs")}</Text>
           </StatsItem>
 
-          <Divider className="my-0.4" orientation="vertical" />
-
           <StatsItem>
             <Text className="font-semibold text-lg">
-              {profileData.completedRoutes}
+              {completedRoutesCount}
             </Text>
             <Text className="text-sm text-gray-500">{t("Climbs")}</Text>
           </StatsItem>
@@ -143,6 +137,42 @@ const ProfileScreen = () => {
         </Button>
       </ProfileContainer>
 
+      <ScrollView
+        contentContainerStyle={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          justifyContent: "flex-start",
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          gap: 12,
+          zIndex: 0,
+        }}
+      >
+        {user?.myClimbs?.data?.map((climb: any) => (
+          <View
+            key={climb.id}
+            style={{
+              width: "30%",
+              marginBottom: 16,
+            }}
+          >
+            <GenericCard
+              title={climb.title}
+              subtitle={`Grade: ${climb.grade}`}
+              description={climb.description || ""}
+              primaryActionCount={climb.likesCount}
+              secondaryActionCount={climb.commentsCount}
+              primaryIcon={ThumbsUp}
+              secondaryIcon={MessageCircle}
+              onPrimaryAction={() => console.log("Like")}
+              onSecondaryAction={() => console.log("Comment")}
+              isLiked={climb.isLiked}
+              imageUrl={climb.imageUrl || "https://placehold.co/600x400"}
+            />
+          </View>
+        ))}
+      </ScrollView>
+
       {/* Modal de Confirmación de Logout */}
       {isLogoutModalOpen && (
         <ModalStyled
@@ -152,10 +182,14 @@ const ProfileScreen = () => {
         >
           <ModalContentStyled>
             <ModalHeader>
-              <Text className="text-lg font-semibold">{t("Confirm Logout")}</Text>
+              <Text className="text-lg font-semibold">
+                {t("Confirm Logout")}
+              </Text>
             </ModalHeader>
             <ModalBodyStyled>
-              <Text className="text-sm">{t("Are you sure you want to log out?")}</Text>
+              <Text className="text-sm">
+                {t("Are you sure you want to log out?")}
+              </Text>
             </ModalBodyStyled>
             <ModalFooter>
               <Button variant="outline" onPress={closeLogoutModal}>
@@ -205,7 +239,11 @@ const ProfileScreen = () => {
               <Button variant="outline" onPress={closeEditModal}>
                 <ButtonText>{t("Cancel")}</ButtonText>
               </Button>
-              <Button variant="solid" onPress={saveProfileChanges} className="ml-2">
+              <Button
+                variant="solid"
+                onPress={saveProfileChanges}
+                className="ml-2"
+              >
                 <ButtonText>{t("Save")}</ButtonText>
               </Button>
             </ModalFooter>
@@ -219,7 +257,11 @@ const ProfileScreen = () => {
 export const Profile = () => {
   return (
     <SafeAreaView className="h-full w-full">
-      <DashboardLayout title="Profile" isSidebarVisible={true} isHeaderVisible={false}>
+      <DashboardLayout
+        title="Profile"
+        isSidebarVisible={true}
+        isHeaderVisible={false}
+      >
         <ProfileScreen />
       </DashboardLayout>
     </SafeAreaView>

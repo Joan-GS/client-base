@@ -25,7 +25,7 @@ export const StyledCard = styled(Card, {
 
 export const StyledImage = styled(Image, {
   width: "100%",
-  height: 450,
+  height: 420,
   borderRadius: 8,
   resizeMode: "contain",
 });

@@ -16,7 +16,7 @@ export const ProfileContainer = styled(VStack, {
   borderRadius: 8,
   paddingTop: 30,
   paddingBottom: 20,
-  zIndex: 0,
+  zIndex: 1,
   shadowColor: "#000",
   shadowOffset: { width: 0, height: 4 },
   shadowOpacity: 0.1,
@@ -60,7 +60,7 @@ export const LogoutButton = styled(Button, {
   backgroundColor: "transparent",
   padding: 10,
   borderRadius: 50,
-  zIndex: 1
+  zIndex: 2
 });
 
 // Button style for settings

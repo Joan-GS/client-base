@@ -69,9 +69,12 @@ export interface LoginResponse {
   
         const userData = await response.json();
   
-        // Guardar solo el username en el estado global
         setUser({
           username: userData.username,
+          followers: userData.followers,
+          following: userData.following,
+          ascensions: userData.ascensions,
+          myClimbs: userData.myClimbs,
         });
       } catch (error) {
         console.error("Error cargando usuario:", error);
