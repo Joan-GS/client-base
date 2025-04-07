@@ -70,6 +70,8 @@ export interface LoginResponse {
         const userData = await response.json();
   
         setUser({
+          id: userData.id,
+          email: userData.email,
           username: userData.username,
           followers: userData.followers,
           following: userData.following,

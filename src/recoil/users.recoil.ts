@@ -1,14 +1,37 @@
 import { atom } from "recoil";
 
-export const userState = atom({
+export interface UserState {
+  id: string | null;
+  email: string | null;
+  username: string | null;
+  followers: string[] | null;
+  following: string[] | null;
+  ascensions: string[] | null;
+  myClimbs: {
+    data: Array<{
+      id: string;
+      title: string;
+      grade: string;
+      description?: string;
+      likesCount: number;
+      commentsCount: number;
+      isLiked: boolean;
+      imageUrl?: string;
+    }> | null;
+  };
+}
+
+export const userState = atom<UserState>({
   key: "userState",
   default: {
-    username: null as string | null,
-    followers: null as string[] | null,
-    following: null as string[] | null,
-    ascensions: null as string[] | null,
+    id: null,
+    email: null,
+    username: null,
+    followers: null,
+    following: null,
+    ascensions: null,
     myClimbs: {
-      data: null as string[] | null,
-      },
+      data: null,
     },
+  },
 });
