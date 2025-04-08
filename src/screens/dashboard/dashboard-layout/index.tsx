@@ -69,7 +69,7 @@ export const DashboardLayout = ({
       )}
 
       {/* Show Web Header only on large screens */}
-      {!isMediumScreen &&(
+      {!isMediumScreen && (
         <Box>
           <WebHeader toggleSidebar={toggleSidebar} title={title} />
         </Box>
@@ -190,6 +190,7 @@ const MainContent = () => {
             onSecondaryAction={() => console.log("💬 Open comment!")}
             isLiked={climb.isLiked}
             imageUrl={climb.imageUrl || "https://placehold.co/600x400"}
+            maxWidth={425}
           />
         ))
       )}

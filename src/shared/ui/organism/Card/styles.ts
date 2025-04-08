@@ -9,7 +9,6 @@ import {
 
 export const StyledCard = styled(Card, {
   width: "100%",
-  maxWidth: 425,
   flexDirection: "column",
   padding: 16,
   borderWidth: 1,

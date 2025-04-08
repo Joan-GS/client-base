@@ -5,6 +5,19 @@ import { Box } from "@/src/components/ui/box";
 import { Button } from "@/src/components/ui/button";
 import { Modal, ModalContent, ModalBody } from "@/src/components/ui/modal";
 import { Pressable } from "@/src/components/ui/pressable";
+import { ScrollView, View } from "@gluestack-ui/themed";
+
+// Main container for the profile screen
+export const MainContainer = styled(View, {
+  flex: 1,
+  backgroundColor: "white",
+});
+
+// Content container that holds all profile elements
+export const ContentContainer = styled(View, {
+  flex: 1,
+  paddingBottom: 20, // Add some padding at the bottom
+});
 
 // Profile text container
 export const ProfileContainer = styled(VStack, {
@@ -23,12 +36,9 @@ export const ProfileContainer = styled(VStack, {
   shadowRadius: 4,
   elevation: 4,
   backgroundColor: "white",
+  marginBottom: 16,
 });
 
-
-
-
-// Profile Header container
 export const ProfileHeader = styled(HStack, {
   alignItems: "center",
   flexDirection: "column",
@@ -36,23 +46,19 @@ export const ProfileHeader = styled(HStack, {
   paddingLeft: 8,
 });
 
-// Profile text container
 export const ProfileText = styled(VStack, {
   alignItems: "flex-start",
 });
 
-// Stats Section container
 export const StatsSection = styled(HStack, {
   justifyContent: "space-evenly",
   width: "100%",
 });
 
-// Stats item container
 export const StatsItem = styled(VStack, {
   alignItems: "center",
 });
 
-// Button style for settings
 export const LogoutButton = styled(Button, {
   position: "absolute",
   top: 20,
@@ -60,15 +66,13 @@ export const LogoutButton = styled(Button, {
   backgroundColor: "transparent",
   padding: 10,
   borderRadius: 50,
-  zIndex: 2
+  zIndex: 2,
 });
 
-// Button style for settings
 export const EditProfileButton = styled(Button, {
   width: "100%",
 });
 
-// Modal Styles
 export const ModalStyled = styled(Modal, {
   justifyContent: "center",
   alignItems: "center",
@@ -100,4 +104,53 @@ export const ModalContentStyled = styled(ModalContent, {
 export const ModalBodyStyled = styled(ModalBody, {
   paddingBottom: 16,
   gap: 16,
+});
+
+export const ClimbGridContainer = styled(View, {
+  width: "100%",
+  paddingHorizontal: 16,
+});
+
+export const ClimbGridContent = styled(View, {
+  flexDirection: "row",
+  flexWrap: "wrap",
+  justifyContent: "flex-start",
+  gap: 12,
+  marginBottom: 54,
+
+});
+
+export const ClimbCardWrapper = styled(View, {
+  width: "100%",
+  minWidth: 405,
+  alignItems: "center",
+
+  "@base": {
+    flex: 1,
+    alignItems: "center",
+  },
+  "@sm": {
+    flex: 1,
+    alignItems: "center",
+
+  },
+  "@md": {
+    flex: 1,
+    alignItems: "center",
+  },
+  "@lg": {
+    flex: 1 / 3,
+    alignItems: "center",
+
+  },
+  "@xl": {
+    flex: 1 / 3,
+    alignItems: "center",
+
+  },
+});
+
+export const ClimbScrollContainer = styled(ScrollView, {
+  paddingVertical: 12,
+  paddingLeft: 16,
 });

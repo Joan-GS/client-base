@@ -21,6 +21,7 @@ interface GenericCardProps {
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
   isLiked?: boolean;
+  [key: string]: any;
 }
 
 const GenericCard: React.FC<GenericCardProps> = ({
@@ -35,11 +36,12 @@ const GenericCard: React.FC<GenericCardProps> = ({
   onPrimaryAction,
   onSecondaryAction,
   isLiked,
+  ...props
 }) => {
   const imageSrc = imageUrl || "https://placehold.co/600x400";
 
   return (
-    <StyledCard>
+    <StyledCard {...props}>
       <StyledImage source={{ uri: imageSrc }} alt="Imagen" />
       <StyledTitle>{title}</StyledTitle>
       {subtitle && <StyledText>{subtitle}</StyledText>}

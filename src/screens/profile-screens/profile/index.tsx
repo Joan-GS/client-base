@@ -26,16 +26,33 @@ import {
   ModalAvatarStyled,
   ModalAvatarPressableStyled,
   LogoutButton,
+  MainContainer,
+  ContentContainer,
+  ClimbGridContainer,
+  ClimbGridContent,
+  ClimbCardWrapper,
 } from "./styles";
 import { EditPhotoIcon } from "./assets/icons/edit-photo";
 import { userState } from "@/src/recoil/users.recoil";
 import { useProfile } from "./api/profile";
+import { toggleLikeClimb } from "../../dashboard/dashboard-layout/api/climbs";
 
 interface ProfileData {
   username: string;
   followers: number;
   createdRoutes: number;
   completedRoutes: number;
+}
+
+interface Climb {
+  id: string;
+  title: string;
+  grade: string;
+  description?: string;
+  likesCount: number;
+  commentsCount: number;
+  isLiked: boolean;
+  imageUrl?: string;
 }
 
 const initialProfileData: ProfileData = {
@@ -53,10 +70,10 @@ const ProfileScreen = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>(initialProfileData);
+  const [climbs, setClimbs] = useState<Climb[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  
-  // Recoil state and custom hooks
+
   const user = useRecoilValue(userState);
   const { loadUserProfile, updateUserProfile } = useProfile();
 
@@ -64,12 +81,44 @@ const ProfileScreen = () => {
   const username = user?.username || profileData.username;
   const followersCount = user?.followers?.length || profileData.followers;
   const followingCount = user?.following?.length || 0;
-  const createdRoutesCount = user?.myClimbs?.data?.length || profileData.createdRoutes;
+  const createdRoutesCount = climbs.length || profileData.createdRoutes;
   const completedRoutesCount = user?.ascensions?.length || profileData.completedRoutes;
 
-  /**
-   * Load user profile data when component mounts
-   */
+  // Toggle like for a climb and update UI optimistically
+  const handleToggleLike = async (climbId: string, isLiked: boolean) => {
+    setClimbs((prevClimbs) =>
+      prevClimbs.map((climb) =>
+        climb.id === climbId
+          ? {
+              ...climb,
+              isLiked: !isLiked,
+              likesCount: isLiked ? climb.likesCount - 1 : climb.likesCount + 1,
+            }
+          : climb
+      )
+    );
+
+    try {
+      await toggleLikeClimb(climbId, isLiked);
+    } catch (error) {
+      console.error("Error updating like:", error);
+
+      // Rollback if the request fails
+      setClimbs((prevClimbs) =>
+        prevClimbs.map((climb) =>
+          climb.id === climbId
+            ? {
+                ...climb,
+                isLiked: isLiked,
+                likesCount: isLiked ? climb.likesCount + 1 : climb.likesCount - 1,
+              }
+            : climb
+        )
+      );
+    }
+  };
+
+  // Load profile data on component mount
   useEffect(() => {
     const initializeProfile = async () => {
       try {
@@ -81,6 +130,7 @@ const ProfileScreen = () => {
           createdRoutes: userData.myClimbs?.data?.length || 0,
           completedRoutes: userData.ascensions?.length || 0,
         });
+        setClimbs(userData.myClimbs?.data || []);
       } catch (error) {
         console.error("Failed to load user profile:", error);
       } finally {
@@ -91,20 +141,18 @@ const ProfileScreen = () => {
     initializeProfile();
   }, []);
 
-  /**
-   * Handle profile updates
-   */
+  // Save profile changes when editing
   const saveProfileChanges = async () => {
     try {
       setIsUpdating(true);
       if (!user?.id || !user?.email) throw new Error("User data not available");
-      
+
       const updates: { username?: string } = {};
-  
+
       if (profileData.username !== user.username) {
         updates.username = profileData.username;
       }
-  
+
       if (Object.keys(updates).length > 0) {
         await updateUserProfile(user.email, updates);
         const updatedData = await loadUserProfile();
@@ -114,20 +162,18 @@ const ProfileScreen = () => {
           createdRoutes: updatedData.myClimbs?.data?.length || 0,
           completedRoutes: updatedData.ascensions?.length || 0,
         });
+        setClimbs(updatedData.myClimbs?.data || []);
       }
-      
+
       closeEditModal();
     } catch (error) {
       console.error("Error updating profile:", error);
-      // TODO: Add error toast/alert here
     } finally {
       setIsUpdating(false);
     }
   };
 
-  /**
-   * Handle user logout
-   */
+  // Logout the user
   const logout = async () => {
     try {
       await AsyncStorage.removeItem("loggedUser");
@@ -153,101 +199,91 @@ const ProfileScreen = () => {
   }
 
   return (
-    <SafeAreaView className="h-full w-full">
-      {/* Header with logout button */}
-      <LogoutButton onPress={openLogoutModal}>
-        <ButtonIcon color="black" as={LogOutIcon} size="lg" />
-      </LogoutButton>
+    <MainContainer>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ContentContainer>
+          {/* Logout button */}
+          <LogoutButton onPress={openLogoutModal}>
+            <ButtonIcon color="black" as={LogOutIcon} size="lg" />
+          </LogoutButton>
 
-      {/* Profile section */}
-      <ProfileContainer>
-        <ProfileHeader>
-          <Avatar size="2xl" />
-          <ProfileText>
-            <Text className="text-xl font-semibold">{username}</Text>
-          </ProfileText>
-        </ProfileHeader>
+          {/* Profile Info */}
+          <ProfileContainer>
+            <ProfileHeader>
+              <Avatar size="2xl" />
+              <ProfileText>
+                <Text className="text-xl font-semibold">{username}</Text>
+              </ProfileText>
+            </ProfileHeader>
 
-        {/* Stats section */}
-        <StatsSection>
-          <StatsItem>
-            <Text className="font-semibold text-lg">{followersCount}</Text>
-            <Text className="text-sm text-gray-500">{t("Followers")}</Text>
-          </StatsItem>
+            {/* Stats */}
+            <StatsSection>
+              <StatsItem>
+                <Text className="font-semibold text-lg">{followersCount}</Text>
+                <Text className="text-sm text-gray-500">{t("Followers")}</Text>
+              </StatsItem>
+              <StatsItem>
+                <Text className="font-semibold text-lg">{followingCount}</Text>
+                <Text className="text-sm text-gray-500">{t("Following")}</Text>
+              </StatsItem>
+              <StatsItem>
+                <Text className="font-semibold text-lg">{createdRoutesCount}</Text>
+                <Text className="text-sm text-gray-500">{t("My Climbs")}</Text>
+              </StatsItem>
+              <StatsItem>
+                <Text className="font-semibold text-lg">{completedRoutesCount}</Text>
+                <Text className="text-sm text-gray-500">{t("Climbs")}</Text>
+              </StatsItem>
+            </StatsSection>
 
-          <StatsItem>
-            <Text className="font-semibold text-lg">{followingCount}</Text>
-            <Text className="text-sm text-gray-500">{t("Following")}</Text>
-          </StatsItem>
+            {/* Edit Profile Button */}
+            <Button
+              variant="outline"
+              action="secondary"
+              onPress={openEditModal}
+              className="gap-3 relative"
+            >
+              <ButtonText className="text-dark">{t("Edit Profile")}</ButtonText>
+              <ButtonIcon as={EditIcon} />
+            </Button>
+          </ProfileContainer>
 
-          <StatsItem>
-            <Text className="font-semibold text-lg">{createdRoutesCount}</Text>
-            <Text className="text-sm text-gray-500">{t("My Climbs")}</Text>
-          </StatsItem>
-
-          <StatsItem>
-            <Text className="font-semibold text-lg">{completedRoutesCount}</Text>
-            <Text className="text-sm text-gray-500">{t("Climbs")}</Text>
-          </StatsItem>
-        </StatsSection>
-
-        {/* Edit profile button */}
-        <Button
-          variant="outline"
-          action="secondary"
-          onPress={openEditModal}
-          className="gap-3 relative"
-        >
-          <ButtonText className="text-dark">{t("Edit Profile")}</ButtonText>
-          <ButtonIcon as={EditIcon} />
-        </Button>
-      </ProfileContainer>
-
-      {/* User climbs grid */}
-      <ScrollView
-        contentContainerStyle={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          justifyContent: "flex-start",
-          paddingHorizontal: 16,
-          paddingTop: 16,
-          gap: 12,
-          zIndex: 0,
-        }}
-      >
-        {user?.myClimbs?.data?.map((climb: any) => (
-          <View key={climb.id} style={{ width: "30%", marginBottom: 16 }}>
-            <GenericCard
-              title={climb.title}
-              subtitle={`Grade: ${climb.grade}`}
-              description={climb.description || ""}
-              primaryActionCount={climb.likesCount}
-              secondaryActionCount={climb.commentsCount}
-              primaryIcon={ThumbsUp}
-              secondaryIcon={MessageCircle}
-              onPrimaryAction={() => console.log("Like")}
-              onSecondaryAction={() => console.log("Comment")}
-              isLiked={climb.isLiked}
-              imageUrl={climb.imageUrl || "https://placehold.co/600x400"}
-            />
-          </View>
-        ))}
+          {/* Climbs Grid */}
+          <ClimbGridContainer>
+            <ClimbGridContent>
+              {climbs.map((climb) => (
+                <ClimbCardWrapper key={climb.id}>
+                  <GenericCard
+                    title={climb.title}
+                    subtitle={`Grade: ${climb.grade}`}
+                    description={climb.description || ""}
+                    primaryActionCount={climb.likesCount}
+                    secondaryActionCount={climb.commentsCount}
+                    primaryIcon={ThumbsUp}
+                    secondaryIcon={MessageCircle}
+                    onPrimaryAction={() => handleToggleLike(climb.id, climb.isLiked)}
+                    onSecondaryAction={() => console.log("Comment")}
+                    isLiked={climb.isLiked}
+                    imageUrl={climb.imageUrl || "https://placehold.co/600x400"}
+                    flex={1}
+                    borderRadius={4}
+                    maxWidth={540}
+                  />
+                </ClimbCardWrapper>
+              ))}
+            </ClimbGridContent>
+          </ClimbGridContainer>
+        </ContentContainer>
       </ScrollView>
 
-      {/* Logout confirmation modal */}
-      <ModalStyled
-        isOpen={isLogoutModalOpen}
-        onClose={closeLogoutModal}
-        closeOnOverlayClick={true}
-      >
+      {/* Logout Modal */}
+      <ModalStyled isOpen={isLogoutModalOpen} onClose={closeLogoutModal} closeOnOverlayClick>
         <ModalContentStyled>
           <ModalHeader>
             <Text className="text-lg font-semibold">{t("Confirm Logout")}</Text>
           </ModalHeader>
           <ModalBodyStyled>
-            <Text className="text-sm">
-              {t("Are you sure you want to log out?")}
-            </Text>
+            <Text className="text-sm">{t("Are you sure you want to log out?")}</Text>
           </ModalBodyStyled>
           <ModalFooter>
             <Button variant="outline" onPress={closeLogoutModal}>
@@ -260,12 +296,8 @@ const ProfileScreen = () => {
         </ModalContentStyled>
       </ModalStyled>
 
-      {/* Edit profile modal */}
-      <ModalStyled
-        isOpen={isEditModalOpen}
-        onClose={closeEditModal}
-        closeOnOverlayClick={true}
-      >
+      {/* Edit Profile Modal */}
+      <ModalStyled isOpen={isEditModalOpen} onClose={closeEditModal} closeOnOverlayClick>
         <ModalContentStyled>
           <ModalHeader>
             <Text>{t("Edit Profile")}</Text>
@@ -309,7 +341,7 @@ const ProfileScreen = () => {
           </ModalFooter>
         </ModalContentStyled>
       </ModalStyled>
-    </SafeAreaView>
+    </MainContainer>
   );
 };
 
@@ -319,11 +351,7 @@ const ProfileScreen = () => {
 export const Profile = () => {
   return (
     <SafeAreaView className="h-full w-full">
-      <DashboardLayout
-        title="Profile"
-        isSidebarVisible={true}
-        isHeaderVisible={false}
-      >
+      <DashboardLayout title="Profile" isSidebarVisible isHeaderVisible={false}>
         <ProfileScreen />
       </DashboardLayout>
     </SafeAreaView>
