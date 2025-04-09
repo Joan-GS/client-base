@@ -22,7 +22,7 @@ export const getAuthToken = async (): Promise<{
  */
 export const handleRequest = async <T>(
   endpoint: string,
-  method: "GET" | "POST" | "DELETE" = "GET",
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
   body?: object
 ): Promise<T> => {
   const { token } = await getAuthToken();

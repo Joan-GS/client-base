@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getAuthToken, handleRequest } from "@/src/utils/api/https.utils";
 import { useSetRecoilState } from "recoil";
 import { userState } from "@/src/recoil/users.recoil";
+import { User } from "@joan16/shared-base";
 
 export interface UserProfileData {
   id: string;
@@ -10,7 +12,7 @@ export interface UserProfileData {
   following: string[];
   ascensions: string[];
   myClimbs: {
-    data: [{
+    data: {
       id: string;
       title: string;
       grade: string;
@@ -19,150 +21,146 @@ export interface UserProfileData {
       commentsCount: number;
       isLiked: boolean;
       imageUrl?: string;
-    }];
+    }[];
   };
 }
 
+/**
+ * Fetch logged user's profile data from the server.
+ */
 export const fetchUserProfile = async (): Promise<UserProfileData> => {
-  try {
-    const storedUser = await AsyncStorage.getItem("loggedUser");
-    if (!storedUser) throw new Error("User not logged in");
+  const { token } = await getAuthToken();
 
-    const { access_token } = JSON.parse(storedUser);
+  const data = await handleRequest<UserProfileData>("/auth/me", "GET");
 
-    const response = await fetch(`http://localhost:8080/api/v1/auth/me`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to fetch user profile");
-    }
-
-    const data = await response.json();
-
-    // Asegurar que myClimbs.data sea un array
-    if (!data.myClimbs?.data) {
-      data.myClimbs = { data: [] };
-    }
-
-    return data;
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      throw new Error(error.message || "An unexpected error occurred");
-    }
-    throw new Error("An unknown error occurred");
+  // Ensure `myClimbs.data` always exists
+  if (!data.myClimbs?.data) {
+    data.myClimbs = { data: [] };
   }
+
+  return data;
 };
 
+/**
+ * Update the user's profile information.
+ */
 export const updateProfile = async (
-    email: string,
+  userId: string,
+  updates: {
+    username?: string;
+  }
+): Promise<UserProfileData> => {
+  const storedUser = await AsyncStorage.getItem("loggedUser");
+  if (!storedUser) throw new Error("User not logged in");
+
+  const { access_token, user: currentUser } = JSON.parse(storedUser);
+
+  const updatedData = await handleRequest<UserProfileData>(
+    `/users/${userId}`,
+    "PUT",
+    updates
+  );
+
+  // Update local storage
+  const updatedUser = {
+    access_token,
+    user: {
+      ...currentUser,
+      ...updatedData,
+    },
+  };
+  await AsyncStorage.setItem("loggedUser", JSON.stringify(updatedUser));
+
+  return updatedData;
+};
+
+/**
+ * Custom hook to interact with the user's profile state.
+ */
+export const useProfile = () => {
+  const setUser = useSetRecoilState(userState);
+
+  const loadUserProfile = async () => {
+    try {
+      const profileData = await fetchUserProfile();
+      setUser((prev) => ({
+        ...prev,
+        ...profileData,
+        myClimbs: {
+          data: profileData.myClimbs?.data || [],
+        },
+      }));
+      return profileData;
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+      throw error;
+    }
+  };
+
+  const updateUserProfile = async (
+    userId: string,
     updates: {
       username?: string;
     }
-  ): Promise<UserProfileData> => {
+  ) => {
     try {
       const storedUser = await AsyncStorage.getItem("loggedUser");
       if (!storedUser) throw new Error("User not logged in");
-  
-      const { access_token, user: currentUser } = JSON.parse(storedUser);
-  
-      const response = await fetch(
-        `http://localhost:8080/api/v1/users/${email}`, // Usar ID en lugar de email
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${access_token}`,
-          },
-          body: JSON.stringify(updates),
-        }
-      );
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Profile update failed");
-      }
-  
-      const data = await response.json();
-  
-      // Mantener la estructura correcta de AsyncStorage
-      const updatedUser = {
-        access_token,
-        user: {
-          ...currentUser,
-          ...data
-        }
-      };
-      
-      await AsyncStorage.setItem("loggedUser", JSON.stringify(updatedUser));
-  
-      return data;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new Error(error.message || "An unexpected error occurred");
-      }
-      throw new Error("An unknown error occurred");
+
+      const { user: currentUser } = JSON.parse(storedUser);
+      const updatedProfile = await updateProfile(userId, updates);
+
+      setUser((prev) => ({
+        ...prev,
+        ...updatedProfile,
+        id: currentUser.id,
+        email: currentUser.email,
+        myClimbs: {
+          data: updatedProfile.myClimbs?.data || prev.myClimbs?.data || [],
+        },
+        followers: updatedProfile.followers || prev.followers || [],
+        following: updatedProfile.following || prev.following || [],
+        ascensions: updatedProfile.ascensions || prev.ascensions || [],
+      }));
+
+      return updatedProfile;
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
     }
   };
 
-  export const useProfile = () => {
-    const setUser = useSetRecoilState(userState);
-  
-    const loadUserProfile = async () => {
-      try {
-        const profileData = await fetchUserProfile();
-        setUser(prev => ({
-          ...prev,
-          ...profileData,
-          myClimbs: {
-            data: profileData.myClimbs?.data || []
-          }
-        }));
-        return profileData;
-      } catch (error) {
-        console.error("Error loading user profile:", error);
-        throw error;
-      }
-    };
-  
-    const updateUserProfile = async (
-      email: string,
-      updates: {
-        username?: string;
-      }
-    ) => {
-      try {
-        const storedUser = await AsyncStorage.getItem("loggedUser");
-        if (!storedUser) throw new Error("User not logged in");
-        
-        const { user: currentUser } = JSON.parse(storedUser);
-        const updatedProfile = await updateProfile(email, updates);
-        
-        // Actualiza el estado manteniendo todos los datos
-        setUser(prev => ({
-          ...prev,
-          ...updatedProfile,
-          id: currentUser.id, // Asegurar que el ID se mantiene
-          email: currentUser.email, // Asegurar que el email se mantiene
-          myClimbs: {
-            data: updatedProfile.myClimbs?.data || prev.myClimbs?.data || []
-          },
-          followers: updatedProfile.followers || prev.followers || [],
-          following: updatedProfile.following || prev.following || [],
-          ascensions: updatedProfile.ascensions || prev.ascensions || []
-        }));
-        
-        return updatedProfile;
-      } catch (error) {
-        console.error("Error updating profile:", error);
-        throw error;
-      }
-    };
-  
-    return { loadUserProfile, updateUserProfile };
-  };
+  return { loadUserProfile, updateUserProfile };
+};
+
+/**
+ * Fetch list of followers for a specific user.
+ */
+export const fetchFollowers = async (userId: string): Promise<any> => {
+  return handleRequest(`/interactions/${userId}/followers`);
+};
+
+/**
+ * Fetch list of following users for a specific user.
+ */
+export const fetchFollowing = async (userId: string): Promise<any> => {
+  return handleRequest(`/interactions/${userId}/following`);
+};
+
+/**
+ * Follow a user.
+ */
+export const followUser = async (userId: string, followerId: string) => {
+  return handleRequest(`/interactions/${userId}/follow`, "POST", {
+    followerId,
+  });
+};
+
+/**
+ * Unfollow a user.
+ */
+export const unfollowUser = async (userId: string, followerId: string) => {
+  return handleRequest(`/interactions/${userId}/unfollow`, "DELETE", {
+    followerId,
+  });
+};

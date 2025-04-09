@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, View } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { LogOutIcon, MessageCircle, ThumbsUp } from "lucide-react-native";
 import { useRecoilValue } from "recoil";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { User } from "@joan16/shared-base";
+
+// Components
 import { Avatar } from "@/src/components/ui/avatar";
 import { Text } from "@/src/components/ui/text";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
@@ -14,6 +17,8 @@ import { EditIcon, Icon } from "@/src/components/ui/icon";
 import { ModalHeader, ModalFooter } from "@/src/components/ui/modal";
 import { Input, InputField } from "@/src/components/ui/input";
 import GenericCard from "@/src/shared/ui/organism/Card/Card";
+
+// Styles
 import {
   ProfileContainer,
   ProfileHeader,
@@ -32,11 +37,20 @@ import {
   ClimbGridContent,
   ClimbCardWrapper,
 } from "./styles";
+
+// Assets & API
 import { EditPhotoIcon } from "./assets/icons/edit-photo";
 import { userState } from "@/src/recoil/users.recoil";
-import { useProfile } from "./api/profile";
+import {
+  fetchFollowers,
+  fetchFollowing,
+  followUser,
+  unfollowUser,
+  useProfile,
+} from "./api/profile";
 import { toggleLikeClimb } from "../../dashboard/dashboard-layout/api/climbs";
 
+// Types
 interface ProfileData {
   username: string;
   followers: number;
@@ -55,6 +69,13 @@ interface Climb {
   imageUrl?: string;
 }
 
+interface FollowerFollowingItem {
+  id: string;
+  followerUser?: User;
+  followingUser?: User;
+  isFollowing: boolean;
+}
+
 const initialProfileData: ProfileData = {
   username: "",
   followers: 0,
@@ -62,32 +83,70 @@ const initialProfileData: ProfileData = {
   completedRoutes: 0,
 };
 
-/**
- * Main ProfileScreen component that displays user information and stats
- */
 const ProfileScreen = () => {
   const { t } = useTranslation();
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>(initialProfileData);
-  const [climbs, setClimbs] = useState<Climb[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
-
   const user = useRecoilValue(userState);
   const { loadUserProfile, updateUserProfile } = useProfile();
 
-  // Derived state for display
+  // State management
+  const [profileData, setProfileData] = useState<ProfileData>(initialProfileData);
+  const [climbs, setClimbs] = useState<Climb[]>([]);
+  const [followersList, setFollowersList] = useState<FollowerFollowingItem[]>([]);
+  const [followingList, setFollowingList] = useState<FollowerFollowingItem[]>([]);
+  
+  // Loading states
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
+  const [isLoadingFollowing, setIsLoadingFollowing] = useState(false);
+  
+  // Modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
+
+  // Derived values
   const username = user?.username || profileData.username;
   const followersCount = user?.followers?.length || profileData.followers;
   const followingCount = user?.following?.length || 0;
   const createdRoutesCount = climbs.length || profileData.createdRoutes;
   const completedRoutesCount = user?.ascensions?.length || profileData.completedRoutes;
 
-  // Toggle like for a climb and update UI optimistically
+  /**
+   * Initialize user profile data
+   */
+  useEffect(() => {
+    const initializeProfile = async () => {
+      try {
+        setIsLoading(true);
+        const userData = await loadUserProfile();
+        
+        setProfileData({
+          username: userData.username || "",
+          followers: userData.followers?.length || 0,
+          createdRoutes: userData.myClimbs?.data?.length || 0,
+          completedRoutes: userData.ascensions?.length || 0,
+        });
+        
+        setClimbs(userData.myClimbs?.data || []);
+      } catch (error) {
+        console.error("Failed to load user profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeProfile();
+  }, []);
+
+  /**
+   * Toggle like status for a climb
+   */
   const handleToggleLike = async (climbId: string, isLiked: boolean) => {
-    setClimbs((prevClimbs) =>
-      prevClimbs.map((climb) =>
+    // Optimistic update
+    setClimbs(prevClimbs =>
+      prevClimbs.map(climb =>
         climb.id === climbId
           ? {
               ...climb,
@@ -102,14 +161,13 @@ const ProfileScreen = () => {
       await toggleLikeClimb(climbId, isLiked);
     } catch (error) {
       console.error("Error updating like:", error);
-
-      // Rollback if the request fails
-      setClimbs((prevClimbs) =>
-        prevClimbs.map((climb) =>
+      // Revert on error
+      setClimbs(prevClimbs =>
+        prevClimbs.map(climb =>
           climb.id === climbId
             ? {
                 ...climb,
-                isLiked: isLiked,
+                isLiked,
                 likesCount: isLiked ? climb.likesCount + 1 : climb.likesCount - 1,
               }
             : climb
@@ -118,37 +176,15 @@ const ProfileScreen = () => {
     }
   };
 
-  // Load profile data on component mount
-  useEffect(() => {
-    const initializeProfile = async () => {
-      try {
-        setIsLoading(true);
-        const userData = await loadUserProfile();
-        setProfileData({
-          username: userData.username || "",
-          followers: userData.followers?.length || 0,
-          createdRoutes: userData.myClimbs?.data?.length || 0,
-          completedRoutes: userData.ascensions?.length || 0,
-        });
-        setClimbs(userData.myClimbs?.data || []);
-      } catch (error) {
-        console.error("Failed to load user profile:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeProfile();
-  }, []);
-
-  // Save profile changes when editing
+  /**
+   * Save profile changes to the server
+   */
   const saveProfileChanges = async () => {
     try {
       setIsUpdating(true);
       if (!user?.id || !user?.email) throw new Error("User data not available");
 
       const updates: { username?: string } = {};
-
       if (profileData.username !== user.username) {
         updates.username = profileData.username;
       }
@@ -156,12 +192,14 @@ const ProfileScreen = () => {
       if (Object.keys(updates).length > 0) {
         await updateUserProfile(user.email, updates);
         const updatedData = await loadUserProfile();
+        
         setProfileData({
           username: updatedData.username || "",
           followers: updatedData.followers?.length || 0,
           createdRoutes: updatedData.myClimbs?.data?.length || 0,
           completedRoutes: updatedData.ascensions?.length || 0,
         });
+        
         setClimbs(updatedData.myClimbs?.data || []);
       }
 
@@ -173,7 +211,9 @@ const ProfileScreen = () => {
     }
   };
 
-  // Logout the user
+  /**
+   * Handle user logout
+   */
   const logout = async () => {
     try {
       await AsyncStorage.removeItem("loggedUser");
@@ -189,6 +229,113 @@ const ProfileScreen = () => {
   const closeEditModal = () => setIsEditModalOpen(false);
   const openLogoutModal = () => setIsLogoutModalOpen(true);
   const closeLogoutModal = () => setIsLogoutModalOpen(false);
+  const closeFollowersModal = () => setIsFollowersModalOpen(false);
+  const closeFollowingModal = () => setIsFollowingModalOpen(false);
+
+  /**
+   * Fetch and display followers list
+   */
+  const openFollowersModal = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsLoadingFollowers(true);
+      setIsFollowersModalOpen(true);
+      const followers = await fetchFollowers(user.id);
+      setFollowersList(followers);
+    } catch (error) {
+      console.error("Error fetching followers:", error);
+    } finally {
+      setIsLoadingFollowers(false);
+    }
+  };
+
+  /**
+   * Fetch and display following list
+   */
+  const openFollowingModal = async () => {
+    if (!user?.id) return;
+
+    try {
+      setIsLoadingFollowing(true);
+      setIsFollowingModalOpen(true);
+      const following = await fetchFollowing(user.id);
+      setFollowingList(following);
+    } catch (error) {
+      console.error("Error fetching following:", error);
+    } finally {
+      setIsLoadingFollowing(false);
+    }
+  };
+
+  /**
+   * Follow a user
+   */
+  const handleFollow = async (userId: string) => {
+    if (!user?.id) return;
+
+    // Optimistic updates
+    updateFollowStatus(userId, true);
+
+    try {
+      await followUser(userId, user.id);
+      // Refresh data
+      const [updatedFollowers, updatedFollowing] = await Promise.all([
+        fetchFollowers(user.id),
+        fetchFollowing(user.id),
+      ]);
+      setFollowersList(updatedFollowers);
+      setFollowingList(updatedFollowing);
+    } catch (error) {
+      console.error("Error following user:", error);
+      // Revert on error
+      updateFollowStatus(userId, false);
+    }
+  };
+
+  /**
+   * Unfollow a user
+   */
+  const handleUnfollow = async (userId: string) => {
+    if (!user?.id) return;
+
+    // Optimistic updates
+    updateFollowStatus(userId, false);
+
+    try {
+      await unfollowUser(user.id, userId);
+      // Refresh data
+      const [updatedFollowers, updatedFollowing] = await Promise.all([
+        fetchFollowers(user.id),
+        fetchFollowing(user.id),
+      ]);
+      setFollowersList(updatedFollowers);
+      setFollowingList(updatedFollowing);
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+      // Revert on error
+      updateFollowStatus(userId, true);
+    }
+  };
+
+  /**
+   * Helper function to update follow status in state
+   */
+  const updateFollowStatus = (userId: string, isFollowing: boolean) => {
+    setFollowersList(prev =>
+      prev.map(item => ({
+        ...item,
+        isFollowing: item.followerUser?.id === userId ? isFollowing : item.isFollowing,
+      }))
+    );
+
+    setFollowingList(prev =>
+      prev.map(item => ({
+        ...item,
+        isFollowing: item.followingUser?.id === userId ? isFollowing : item.isFollowing,
+      }))
+    );
+  };
 
   if (isLoading) {
     return (
@@ -198,16 +345,54 @@ const ProfileScreen = () => {
     );
   }
 
+  /**
+   * Render a user item in followers/following list
+   */
+  const renderUserItem = (item: FollowerFollowingItem, isFollowerList: boolean) => {
+    const userData = isFollowerList ? item.followerUser : item.followingUser;
+    if (!userData) return null;
+
+    return (
+      <View className="flex-row items-center justify-between py-2 border-b border-gray-100">
+        <View className="flex-row items-center flex-1">
+          <Avatar size="sm" className="mr-3" />
+          <View className="flex-1">
+            <Text className="font-medium text-base" style={{ color: "black" }}>
+              {userData.username}
+            </Text>
+          </View>
+        </View>
+        {userData.id !== user?.id && (
+          item.isFollowing ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => handleUnfollow(userData.id)}
+            >
+              <ButtonText>{t("Following")}</ButtonText>
+            </Button>
+          ) : (
+            <Button
+              variant="solid"
+              size="sm"
+              onPress={() => handleFollow(userData.id)}
+            >
+              <ButtonText>{t("Follow")}</ButtonText>
+            </Button>
+          )
+        )}
+      </View>
+    );
+  };
+
   return (
     <MainContainer>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ContentContainer>
-          {/* Logout button */}
           <LogoutButton onPress={openLogoutModal}>
             <ButtonIcon color="black" as={LogOutIcon} size="lg" />
           </LogoutButton>
 
-          {/* Profile Info */}
           <ProfileContainer>
             <ProfileHeader>
               <Avatar size="2xl" />
@@ -216,13 +401,12 @@ const ProfileScreen = () => {
               </ProfileText>
             </ProfileHeader>
 
-            {/* Stats */}
             <StatsSection>
-              <StatsItem>
+              <StatsItem onPress={openFollowersModal}>
                 <Text className="font-semibold text-lg">{followersCount}</Text>
                 <Text className="text-sm text-gray-500">{t("Followers")}</Text>
               </StatsItem>
-              <StatsItem>
+              <StatsItem onPress={openFollowingModal}>
                 <Text className="font-semibold text-lg">{followingCount}</Text>
                 <Text className="text-sm text-gray-500">{t("Following")}</Text>
               </StatsItem>
@@ -236,7 +420,6 @@ const ProfileScreen = () => {
               </StatsItem>
             </StatsSection>
 
-            {/* Edit Profile Button */}
             <Button
               variant="outline"
               action="secondary"
@@ -248,10 +431,9 @@ const ProfileScreen = () => {
             </Button>
           </ProfileContainer>
 
-          {/* Climbs Grid */}
           <ClimbGridContainer>
             <ClimbGridContent>
-              {climbs.map((climb) => (
+              {climbs.map(climb => (
                 <ClimbCardWrapper key={climb.id}>
                   <GenericCard
                     title={climb.title}
@@ -276,7 +458,7 @@ const ProfileScreen = () => {
         </ContentContainer>
       </ScrollView>
 
-      {/* Logout Modal */}
+      {/* Logout Confirmation Modal */}
       <ModalStyled isOpen={isLogoutModalOpen} onClose={closeLogoutModal} closeOnOverlayClick>
         <ModalContentStyled>
           <ModalHeader>
@@ -314,9 +496,7 @@ const ProfileScreen = () => {
             <Input>
               <InputField
                 value={profileData.username}
-                onChangeText={(text) =>
-                  setProfileData({ ...profileData, username: text })
-                }
+                onChangeText={text => setProfileData({ ...profileData, username: text })}
                 placeholder="Enter your username"
               />
             </Input>
@@ -341,13 +521,68 @@ const ProfileScreen = () => {
           </ModalFooter>
         </ModalContentStyled>
       </ModalStyled>
+
+      {/* Followers List Modal */}
+      <ModalStyled isOpen={isFollowersModalOpen} onClose={closeFollowersModal} closeOnOverlayClick>
+        <ModalContentStyled>
+          <ModalHeader>
+            <Text className="text-lg font-semibold">
+              {t("Followers")} ({followersList.length})
+            </Text>
+          </ModalHeader>
+          <ModalBodyStyled>
+            {isLoadingFollowers ? (
+              <ActivityIndicator size="large" />
+            ) : (
+              <ScrollView style={{ maxHeight: 400 }}>
+                {followersList.length === 0 ? (
+                  <Text className="text-sm text-gray-500">{t("No followers yet")}</Text>
+                ) : (
+                  followersList.map(item => renderUserItem(item, true))
+                )}
+              </ScrollView>
+            )}
+          </ModalBodyStyled>
+          <ModalFooter>
+            <Button variant="outline" onPress={closeFollowersModal}>
+              <ButtonText>{t("Close")}</ButtonText>
+            </Button>
+          </ModalFooter>
+        </ModalContentStyled>
+      </ModalStyled>
+
+      {/* Following List Modal */}
+      <ModalStyled isOpen={isFollowingModalOpen} onClose={closeFollowingModal} closeOnOverlayClick>
+        <ModalContentStyled>
+          <ModalHeader>
+            <Text className="text-lg font-semibold">
+              {t("Following")} ({followingList.length})
+            </Text>
+          </ModalHeader>
+          <ModalBodyStyled>
+            {isLoadingFollowing ? (
+              <ActivityIndicator size="large" />
+            ) : (
+              <ScrollView style={{ maxHeight: 400 }}>
+                {followingList.length === 0 ? (
+                  <Text className="text-sm text-gray-500">{t("Not following anyone yet")}</Text>
+                ) : (
+                  followingList.map(item => renderUserItem(item, false))
+                )}
+              </ScrollView>
+            )}
+          </ModalBodyStyled>
+          <ModalFooter>
+            <Button variant="outline" onPress={closeFollowingModal}>
+              <ButtonText>{t("Close")}</ButtonText>
+            </Button>
+          </ModalFooter>
+        </ModalContentStyled>
+      </ModalStyled>
     </MainContainer>
   );
 };
 
-/**
- * Profile component wrapper with DashboardLayout
- */
 export const Profile = () => {
   return (
     <SafeAreaView className="h-full w-full">

@@ -55,7 +55,7 @@ export const StatsSection = styled(HStack, {
   width: "100%",
 });
 
-export const StatsItem = styled(VStack, {
+export const StatsItem = styled(Pressable, {
   alignItems: "center",
 });
 
