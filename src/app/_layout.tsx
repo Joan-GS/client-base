@@ -69,6 +69,7 @@ function RootLayoutNav() {
               <Stack.Screen name="forgot-password" />
               <Stack.Screen name="create-password" />
               <Stack.Screen name="dashboard" />
+              <Stack.Screen name="news-and-feed"/>
               <Stack.Screen name="+not-found" />
             </Stack>
           </ThemeProvider>

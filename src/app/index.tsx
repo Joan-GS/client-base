@@ -59,6 +59,13 @@ const index = () => {
         </Button>
         <Button
           onPress={() => {
+            router.push("/search/search");
+          }}
+        >
+          <ButtonText>Search</ButtonText>
+        </Button>
+        <Button
+          onPress={() => {
             router.push("/auth/confirm-mail");
           }}
         >
