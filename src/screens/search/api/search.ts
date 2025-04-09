@@ -1,6 +1,5 @@
 import { getAuthToken, handleRequest } from "@/src/utils/api/https.utils";
 
-
 export interface Climb {
   imageUrl: string;
   id: string;
@@ -25,13 +24,43 @@ export interface Climb {
 export interface ClimbsResponse {
   message: string;
   data?: Climb[];
+  total?: number;
+}
+export interface ClimbFilters {
+  OR?: Array<{
+    title?: { contains: string };
+    grade?: { contains: string };
+    tags?: { hasSome: string[] };
+  }>;
 }
 
 /**
  * Obtiene la lista de climbs desde el servidor.
  */
-export const fetchClimbs = async (page = 1, pageSize = 3): Promise<ClimbsResponse> => {
-  return handleRequest<ClimbsResponse>(`/climbs?page=${page}&pageSize=${pageSize}`);
+export const fetchClimbs = async (
+  page: number = 1,
+  pageSize: number = 10,
+  searchQuery?: string
+): Promise<ClimbsResponse> => {
+  let filters: ClimbFilters | undefined;
+
+  if (searchQuery) {
+    filters = {
+      OR: [
+        { title: { contains: searchQuery } },
+        { grade: { contains: searchQuery } },
+        { tags: { hasSome: [searchQuery] } },
+      ],
+    };
+  }
+
+  const params = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+    ...(filters && { filters: JSON.stringify(filters) }),
+  });
+
+  return handleRequest<ClimbsResponse>(`/climbs?${params.toString()}`);
 };
 
 /**
