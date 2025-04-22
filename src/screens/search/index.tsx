@@ -29,9 +29,10 @@ import {
   InputSlot,
 } from "@/src/components/ui/input";
 import { ButtonText } from "@/src/components/ui/button";
-import { fetchClimbs, Climb, toggleLikeClimb } from "./api/search";
+import { fetchClimbs, Climb, toggleLikeClimb, fetchUsers } from "./api/search";
 import { Heart, Star } from "lucide-react-native";
 import { HStack, Pressable, VStack } from "@gluestack-ui/themed";
+import { User } from "@joan16/shared-base";
 
 type SearchTab = "climbs" | "users";
 
@@ -40,6 +41,7 @@ const MainContent = () => {
   const [activeTab, setActiveTab] = useState<SearchTab>("climbs");
   const [searchQuery, setSearchQuery] = useState("");
   const [climbs, setClimbs] = useState<Climb[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -54,10 +56,18 @@ const MainContent = () => {
           setHasMore(true);
         }
         loadClimbs(reset);
+      } else if (activeTab === "users") {
+        if (reset) {
+          setUsers([]);
+          setPage(1);
+          setHasMore(true);
+        }
+        loadUsers(reset);
       }
     },
     [activeTab, searchQuery]
   );
+  
 
   const loadClimbs = useCallback(
     async (reset = false) => {
@@ -89,6 +99,34 @@ const MainContent = () => {
     },
     [searchQuery, page, hasMore, pageSize]
   );
+
+  const loadUsers = useCallback(
+    async (reset = false) => {
+      if (!hasMore && !reset) return;
+  
+      setLoading(true);
+      try {
+        const currentPage = reset ? 1 : page;
+        const response = await fetchUsers(currentPage, pageSize, searchQuery || undefined);
+  
+        if (reset) {
+          setUsers(response.data || []);
+          setPage(2);
+        } else {
+          setUsers((prev) => [...prev, ...(response.data || [])]);
+          setPage((prev) => prev + 1);
+        }
+  
+        setHasMore((response.data?.length || 0) >= pageSize);
+      } catch (error) {
+        console.error("Error loading users:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchQuery, page, hasMore, pageSize]
+  );
+  
 
   // Initial load and tab change
   useEffect(() => {
@@ -255,11 +293,28 @@ const MainContent = () => {
             </>
           )
         ) : (
-          <EmptyState>
-            <EmptyStateText>
-              {searchQuery ? t("No users found") : t("Search for users")}
-            </EmptyStateText>
-          </EmptyState>
+          users.length === 0 ? (
+            <EmptyState>
+              <EmptyStateText>
+                {searchQuery ? t("No users found") : t("Search for users")}
+              </EmptyStateText>
+            </EmptyState>
+          ) : (
+            <>
+              {users.map((user) => (
+                <ClimbItem key={user.id}>
+                  <ClimbRow>
+                    <ClimbTitle>{user.username}</ClimbTitle>
+                  </ClimbRow>
+                </ClimbItem>
+              ))}
+              {loading && page > 1 && (
+                <EmptyState>
+                  <EmptyStateText>{t("Loading more users...")}</EmptyStateText>
+                </EmptyState>
+              )}
+            </>
+          )
         )}
       </ContentScrollView>
     </MainContainer>

@@ -1,4 +1,11 @@
 import { getAuthToken, handleRequest } from "@/src/utils/api/https.utils";
+import { User } from "@joan16/shared-base";
+
+export interface UsersResponse {
+  message: string;
+  data?: User[];
+  total?: number;
+}
 
 export interface Climb {
   imageUrl: string;
@@ -80,4 +87,26 @@ export const toggleLikeClimb = async (
       ? `❌ Like eliminado en la escalada ${climbId}`
       : `✅ Like añadido a la escalada ${climbId}`
   );
+};
+
+export const fetchUsers = async (
+  page: number = 1,
+  pageSize: number = 10,
+  searchQuery?: string
+): Promise<UsersResponse> => {
+  let filters: any;
+
+  if (searchQuery) {
+    filters = {
+      OR: [{ username: { contains: searchQuery } }],
+    };
+  }
+
+  const params = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+    ...(filters && { filters: JSON.stringify(filters) }),
+  });
+
+  return handleRequest<UsersResponse>(`/users?${params.toString()}`);
 };
