@@ -26,20 +26,36 @@ export interface UserProfileData {
 }
 
 /**
- * Fetch logged user's profile data from the server.
+ * Fetch user profile data.
+ * - If no userId is provided, fetches logged-in user's profile (/auth/me) with GET.
+ * - If userId is provided, fetches another user's profile (/auth/profile?profileId=xxx) with GET.
  */
-export const fetchUserProfile = async (): Promise<UserProfileData> => {
-  const { token } = await getAuthToken();
+export const fetchUserProfile = async (userId?: string): Promise<UserProfileData & { isFollowing?: boolean }> => {
+  if (userId) {
+    // GET a /auth/profile amb query param
+    const data = await handleRequest<UserProfileData & { isFollowing: boolean }>(
+      `/auth/profile/${userId}`,
+      "GET"
+    );
 
-  const data = await handleRequest<UserProfileData>("/auth/me", "GET");
+    if (!data.myClimbs?.data) {
+      data.myClimbs = { data: [] };
+    }
 
-  // Ensure `myClimbs.data` always exists
-  if (!data.myClimbs?.data) {
-    data.myClimbs = { data: [] };
+    return data;
+  } else {
+    // GET normal a /auth/me
+    const data = await handleRequest<UserProfileData>("/auth/me", "GET");
+
+    if (!data.myClimbs?.data) {
+      data.myClimbs = { data: [] };
+    }
+
+    return data;
   }
-
-  return data;
 };
+
+
 
 /**
  * Update the user's profile information.
