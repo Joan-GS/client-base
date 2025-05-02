@@ -30,16 +30,16 @@ export const handleRequest = async <T>(
   const response = await fetch(`${API_URL}${endpoint}`, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
     },
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Error en la petición");
+  const responseData = await response.json();
+
+  if (!response.ok || !responseData.success) {
+    throw new Error(responseData.message || "Error en la petición");
   }
 
-  return response.json();
+  return responseData.data as T;
 };

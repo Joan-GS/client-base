@@ -32,7 +32,7 @@ export interface LoginResponse {
   
       const data = await response.json();
 
-      await AsyncStorage.setItem("loggedUser", JSON.stringify(data));
+      await AsyncStorage.setItem("loggedUser", JSON.stringify(data.data));
 
       return {
         message: "Login successful!",

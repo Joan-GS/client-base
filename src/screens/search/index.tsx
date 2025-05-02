@@ -29,28 +29,38 @@ import {
   InputSlot,
 } from "@/src/components/ui/input";
 import { ButtonText } from "@/src/components/ui/button";
-import { fetchClimbs, Climb, toggleLikeClimb, fetchUsers } from "./api/search";
+import {
+  fetchClimbs,
+  Climb,
+  toggleLikeClimb,
+  fetchUsers,
+  followUser,
+  unfollowUser,
+} from "./api/search";
 import { Heart, Star } from "lucide-react-native";
 import { Button, HStack, Pressable, VStack } from "@gluestack-ui/themed";
 import { User } from "@joan16/shared-base";
 import { useRouter } from "expo-router";
+import { useRecoilValue } from "recoil";
+import { userState } from "@/src/recoil/users.recoil";
+import { Text} from 'react-native';
+
 
 type SearchTab = "climbs" | "users";
 type UserWithFollowStatus = User & { isFollowing?: boolean };
-
 
 const MainContent = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SearchTab>("climbs");
   const [searchQuery, setSearchQuery] = useState("");
   const [climbs, setClimbs] = useState<Climb[]>([]);
-  const [users, setUsers] = useState<UserWithFollowStatus []>([]);
+  const [users, setUsers] = useState<UserWithFollowStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const pageSize = 10;
   const router = useRouter();
-
+  const currentUser = useRecoilValue(userState);
 
   const handleUserPress = (userId: string) => {
     router.push({
@@ -184,6 +194,56 @@ const MainContent = () => {
     }
   };
 
+  const handleFollow = async (targetUserId: string) => {
+    try {
+      // Optimistic update
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === targetUserId ? { ...user, isFollowing: true } : user
+        )
+      );
+
+      await followUser(targetUserId || "");
+
+      // Optional: Refresh data if needed
+      // const response = await fetchUsers(page, pageSize, searchQuery);
+      // setUsers(response.data || []);
+    } catch (error) {
+      console.error("Error following user:", error);
+      // Revert on error
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === targetUserId ? { ...user, isFollowing: false } : user
+        )
+      );
+    }
+  };
+
+  const handleUnfollow = async (targetUserId: string) => {
+    try {
+      // Optimistic update
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === targetUserId ? { ...user, isFollowing: false } : user
+        )
+      );
+
+      await unfollowUser(targetUserId || "");
+
+      // Optional: Refresh data if needed
+      // const response = await fetchUsers(page, pageSize, searchQuery);
+      // setUsers(response.data || []);
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+      // Revert on error
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === targetUserId ? { ...user, isFollowing: true } : user
+        )
+      );
+    }
+  };
+
   if (loading && page === 1) {
     return (
       <MainContainer>
@@ -314,23 +374,27 @@ const MainContent = () => {
           </EmptyState>
         ) : (
           <>
-             {users.map((user) => (
+            {users.map((user) => (
               <Pressable key={user.id} onPress={() => handleUserPress(user.id)}>
                 <ClimbItem>
                   <ClimbRow>
                     <VStack flex={1}>
                       <ClimbTitle>{user.username}</ClimbTitle>
                     </VStack>
+                    {user.id !== currentUser?.id && (
                       <Button
                         onPress={(e) => {
-                          user.isFollowing 
+                          e.stopPropagation();
+                          user.isFollowing
                             ? handleUnfollow(user.id)
                             : handleFollow(user.id);
                         }}
                       >
-                     
+                        <Text>
+                          {user.isFollowing ? t("Unfollow") : t("Follow")}
+                        </Text>
                       </Button>
-                  
+                    )}
                   </ClimbRow>
                 </ClimbItem>
               </Pressable>

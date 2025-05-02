@@ -110,3 +110,17 @@ export const fetchUsers = async (
 
   return handleRequest<UsersResponse>(`/users?${params.toString()}`);
 };
+
+/**
+ * Follow a user.
+ */
+export const followUser = async (userId: string) => {
+  return handleRequest(`/interactions/${userId}/follow`, "POST");
+};
+
+/**
+ * Unfollow a user.
+ */
+export const unfollowUser = async (userId: string) => {
+  return handleRequest(`/interactions/${userId}/follow`, "DELETE");
+};

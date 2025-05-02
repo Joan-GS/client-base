@@ -8,8 +8,8 @@ export interface UserProfileData {
   id: string;
   email: string;
   username: string;
-  followers: string[];
-  following: string[];
+  followers: any;
+  following: any;
   ascensions: string[];
   myClimbs: {
     data: {
@@ -34,7 +34,7 @@ export const fetchUserProfile = async (userId?: string): Promise<UserProfileData
   if (userId) {
     // GET a /auth/profile amb query param
     const data = await handleRequest<UserProfileData & { isFollowing: boolean }>(
-      `/auth/profile/${userId}`,
+      `/profile/${userId}`,
       "GET"
     );
 
@@ -99,6 +99,7 @@ export const useProfile = () => {
   const loadUserProfile = async () => {
     try {
       const profileData = await fetchUserProfile();
+      console.log("Profile data:", profileData);
       setUser((prev) => ({
         ...prev,
         ...profileData,
@@ -152,31 +153,27 @@ export const useProfile = () => {
 /**
  * Fetch list of followers for a specific user.
  */
-export const fetchFollowers = async (userId: string): Promise<any> => {
-  return handleRequest(`/interactions/${userId}/followers`);
+export const fetchFollowers = async (userId: string): Promise<any[]> => {
+  const response = await handleRequest<any>(`/interactions/${userId}/followers`);
+  return response.data; // Extract the nested array
 };
-
 /**
  * Fetch list of following users for a specific user.
  */
-export const fetchFollowing = async (userId: string): Promise<any> => {
-  return handleRequest(`/interactions/${userId}/following`);
+export const fetchFollowing = async (userId: string): Promise<any[]> => {
+  const response = await handleRequest<any>(`/interactions/${userId}/following`);
+  return response.data; // Extract the nested array
 };
-
 /**
  * Follow a user.
  */
-export const followUser = async (userId: string, followerId: string) => {
-  return handleRequest(`/interactions/${userId}/follow`, "POST", {
-    followerId,
-  });
+export const followUser = async (userId: string) => {
+  return handleRequest(`/interactions/${userId}/follow`, "POST");
 };
 
 /**
  * Unfollow a user.
  */
-export const unfollowUser = async (userId: string, followerId: string) => {
-  return handleRequest(`/interactions/${userId}/unfollow`, "DELETE", {
-    followerId,
-  });
+export const unfollowUser = async (userId: string) => {
+  return handleRequest(`/interactions/${userId}/follow`, "DELETE");
 };
