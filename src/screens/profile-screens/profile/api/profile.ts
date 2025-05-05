@@ -177,3 +177,11 @@ export const followUser = async (userId: string) => {
 export const unfollowUser = async (userId: string) => {
   return handleRequest(`/interactions/${userId}/follow`, "DELETE");
 };
+
+/**
+ * Remove a follower.
+ */
+export const removeFollower = async (userId: string) => {
+  return handleRequest(`/interactions/${userId}/remove-follower`, "DELETE");
+};
+

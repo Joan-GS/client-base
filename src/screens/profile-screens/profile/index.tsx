@@ -7,6 +7,7 @@ import {
   LogOutIcon,
   MessageCircle,
   ThumbsUp,
+  UserX,
 } from "lucide-react-native";
 import { useRecoilValue } from "recoil";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -52,6 +53,7 @@ import {
   fetchFollowing,
   followUser,
   unfollowUser,
+  removeFollower,
   useProfile,
   fetchUserProfile,
 } from "./api/profile";
@@ -119,12 +121,14 @@ const ProfileScreen = () => {
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
   const [isUnfollowModalOpen, setIsUnfollowModalOpen] = useState(false);
+  const [isRemoveFollowerModalOpen, setIsRemoveFollowerModalOpen] = useState(false);
   const [userToUnfollow, setUserToUnfollow] = useState<string | null>(null);
+  const [userToRemove, setUserToRemove] = useState<string | null>(null);
 
   // Memoized values
   const targetUserId = useMemo(() => userId || currentUser?.id, [userId, currentUser?.id]);
   const username = profileData.username;
-  const followersCount = profileData.followers;
+  const followersCount = followersList?.length || 0;
   const followingCount = followingList?.length || 0;
   const createdRoutesCount = climbs.length || 0;
   const completedRoutesCount = profileData.completedRoutes;
@@ -150,14 +154,41 @@ const ProfileScreen = () => {
         userData = await fetchUserProfile(userId);
       }
 
-      setProfileData({
+      const updatedProfileData = {
         username: userData.username || "",
         followers: userData.followers?.data?.length || 0,
         following: userData.following?.data?.length || 0,
         createdRoutes: userData.myClimbs?.data?.length || 0,
         completedRoutes: userData.ascensions?.length || 0,
         isFollowing: userData.isFollowing || false,
-      });
+      };
+      setProfileData(updatedProfileData);
+      
+      // Y actualiza los followers/following después de establecer los datos del perfil
+      if (targetUserId) {
+        const [followers, following] = await Promise.all([
+          fetchFollowers(targetUserId),
+          fetchFollowing(targetUserId),
+        ]);
+        
+        // Para los followers, verifica si ya los sigues
+        const enhancedFollowers = followers.map(follower => {
+          const isFollowing = following.some(f => 
+            f.followingUser?.id === follower.followerUser?.id
+          );
+          return { ...follower, isFollowing };
+        });
+        
+        setFollowersList(enhancedFollowers);
+        setFollowingList(following);
+        
+        // Actualiza los contadores con los datos reales
+        setProfileData(prev => ({
+          ...prev,
+          followers: enhancedFollowers.length,
+          following: following.length,
+        }));
+      }
 
       setClimbs(userData.myClimbs?.data || []);
 
@@ -266,6 +297,7 @@ const ProfileScreen = () => {
   const closeFollowersModal = useCallback(() => setIsFollowersModalOpen(false), []);
   const closeFollowingModal = useCallback(() => setIsFollowingModalOpen(false), []);
   const closeUnfollowModal = useCallback(() => setIsUnfollowModalOpen(false), []);
+  const closeRemoveFollowerModal = useCallback(() => setIsRemoveFollowerModalOpen(false), []);
 
   /**
    * Fetch and display followers list
@@ -312,104 +344,150 @@ const ProfileScreen = () => {
   }, []);
 
   /**
+   * Open remove follower confirmation modal
+   */
+  const openRemoveFollowerModal = useCallback((userId: string) => {
+    setUserToRemove(userId);
+    setIsRemoveFollowerModalOpen(true);
+  }, []);
+
+  /**
    * Follow a user
    */
   const handleFollow = useCallback(async (targetUserId: string) => {
-    // Optimistic updates
-    updateFollowStatus(targetUserId, true);
-
     try {
+      // Optimistic update
+      setFollowersList(prevFollowers => 
+        prevFollowers.map(follower => 
+          follower.followerUser?.id === targetUserId 
+            ? { ...follower, isFollowing: true } 
+            : follower
+        )
+      );
+      
+      setFollowingList(prevFollowing => {
+        const userToFollow = followersList.find(f => f.followerUser?.id === targetUserId);
+        if (userToFollow) {
+          return [...prevFollowing, {
+            id: `temp-${Date.now()}`,
+            followingUser: userToFollow.followerUser,
+            isFollowing: true
+          }];
+        }
+        return prevFollowing;
+      });
+  
       await followUser(targetUserId);
-      // Refresh data
+      
+      // Actualización real después de la llamada API
       const [updatedFollowers, updatedFollowing] = await Promise.all([
-        fetchFollowers(targetUserId),
-        fetchFollowing(targetUserId),
+        fetchFollowers(currentUser?.id || ""),
+        fetchFollowing(currentUser?.id || ""),
       ]);
+      
       setFollowersList(updatedFollowers);
       setFollowingList(updatedFollowing);
-      setProfileData(prev => ({
-        ...prev,
-        followers: updatedFollowers?.length,
-      }));
+      
+      if (userId && userId !== currentUser?.id) {
+        setProfileData(prev => ({
+          ...prev,
+          followers: updatedFollowers.length,
+        }));
+      }
     } catch (error) {
       console.error("Error following user:", error);
-      // Revert on error
-      updateFollowStatus(targetUserId, false);
+      // Revertir en caso de error
+      setFollowersList(prevFollowers => 
+        prevFollowers.map(follower => 
+          follower.followerUser?.id === targetUserId 
+            ? { ...follower, isFollowing: false } 
+            : follower
+        )
+      );
+      setFollowingList(prevFollowing => 
+        prevFollowing.filter(f => f.followingUser?.id !== targetUserId)
+      );
     }
-  }, []);
+  }, [currentUser?.id, userId, followersList]);
 
   /**
    * Unfollow a user after confirmation
    */
   const confirmUnfollow = useCallback(async () => {
     if (!userToUnfollow) return;
-
+  
     try {
       // Optimistic update
-      updateFollowStatus(userToUnfollow, false);
+      setFollowingList(prevFollowing => 
+        prevFollowing.filter(f => f.followingUser?.id !== userToUnfollow)
+      );
       
+      setFollowersList(prevFollowers => 
+        prevFollowers.map(follower => 
+          follower.followerUser?.id === userToUnfollow 
+            ? { ...follower, isFollowing: false } 
+            : follower
+        )
+      );
+  
       await unfollowUser(userToUnfollow);
       
-      // Refresh data
+      // Actualización real
       const [updatedFollowers, updatedFollowing] = await Promise.all([
-        fetchFollowers(userToUnfollow),
-        fetchFollowing(userToUnfollow),
+        fetchFollowers(currentUser?.id || ""),
+        fetchFollowing(currentUser?.id || ""),
       ]);
+      
       setFollowersList(updatedFollowers);
       setFollowingList(updatedFollowing);
-      setProfileData(prev => ({
-        ...prev,
-        followers: updatedFollowers?.length,
-      }));
+      
+      if (userId && userId !== currentUser?.id) {
+        setProfileData(prev => ({
+          ...prev,
+          followers: updatedFollowers.length,
+        }));
+      }
     } catch (error) {
       console.error("Error unfollowing user:", error);
-      // Revert on error
-      updateFollowStatus(userToUnfollow, true);
+      // Revertir en caso de error
+      const user = followersList.find(f => f.followerUser?.id === userToUnfollow);
+      if (user) {
+        setFollowingList(prev => [...prev, { ...user, isFollowing: true }]);
+      }
+      setFollowersList(prevFollowers => 
+        prevFollowers.map(follower => 
+          follower.followerUser?.id === userToUnfollow 
+            ? { ...follower, isFollowing: true } 
+            : follower
+        )
+      );
     } finally {
       closeUnfollowModal();
     }
-  }, [userToUnfollow, closeUnfollowModal]);
+  }, [userToUnfollow, currentUser?.id, userId, closeUnfollowModal, followersList]);
 
   /**
-   * Helper function to update follow status in state
+   * Remove a follower after confirmation
    */
-const updateFollowStatus = useCallback((targetUserId: string, isFollowing: boolean) => {
-  // Update followers list - only if the current user is the one being followed/unfollowed
-  setFollowersList(prev =>
-    prev.map(item => {
-      // Only update if the current user is the one being followed/unfollowed
-      if (item.followerUser?.id === currentUser?.id && item.followingUser?.id === targetUserId) {
-        return {
-          ...item,
-          isFollowing
-        };
-      }
-      return item;
-    })
-  );
+  const confirmRemoveFollower = useCallback(async () => {
+    if (!userToRemove || !currentUser?.id) return;
 
-  // Update following list - only if the current user is doing the following/unfollowing
-  setFollowingList(prev =>
-    prev.map(item => {
-      if (item.followerUser?.id === currentUser?.id && item.followingUser?.id === targetUserId) {
-        return {
-          ...item,
-          isFollowing
-        };
-      }
-      return item;
-    })
-  );
-
-  // Update main profile data if this is the viewed profile
-  if (userId === targetUserId) {
-    setProfileData(prev => ({
-      ...prev,
-      isFollowing,
-      followers: isFollowing ? prev.followers + 1 : prev.followers - 1,
-    }));
-  }
-}, [userId, currentUser?.id]);
+    try {
+      await removeFollower(userToRemove);
+      
+      // Update followers list
+      const updatedFollowers = await fetchFollowers(currentUser.id);
+      setFollowersList(updatedFollowers);
+      setProfileData(prev => ({
+        ...prev,
+        followers: updatedFollowers.length,
+      }));
+    } catch (error) {
+      console.error("Error removing follower:", error);
+    } finally {
+      closeRemoveFollowerModal();
+    }
+  }, [userToRemove, currentUser?.id, closeRemoveFollowerModal]);
 
   /**
    * Render a user item in followers/following list
@@ -424,10 +502,16 @@ const updateFollowStatus = useCallback((targetUserId: string, isFollowing: boole
           pathname: '/profile/profile',
           params: { userId: user.id }
         });
-        // Cierra el modal después de navegar
+        // Close modal after navigation
         if (isFollowersModalOpen) setIsFollowersModalOpen(false);
         if (isFollowingModalOpen) setIsFollowingModalOpen(false);
       };
+  
+      // Check if the current user is viewing their own profile
+      const isOwnProfile = isCurrentUser;
+  
+      // Check if this is a followers list item
+      const isFollowerItem = !!item.followerUser;
   
       return (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }}>
@@ -435,36 +519,50 @@ const updateFollowStatus = useCallback((targetUserId: string, isFollowing: boole
             style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
             onPress={handlePressUser}
           >
+            <Avatar size="sm" source={  user.profileImage} />
             <View style={{ marginLeft: 12 }}>
               <Text style={{ fontWeight: '600', fontSize: 16 }}>{user.username}</Text>
             </View>
           </Pressable>
   
           {user.id !== currentUser?.id && (
-            item.isFollowing ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onPress={() => {
-                  setUserToUnfollow(user.id);
-                  setIsUnfollowModalOpen(true);
-                }}
-              >
-                <ButtonText>Following</ButtonText>
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onPress={() => handleFollow(user.id)}
-              >
-                <ButtonText>Follow</ButtonText>
-              </Button>
-            )
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {isOwnProfile && isFollowerItem ? (
+                // Remove follower button (only shown in followers list for own profile)
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPress={() => openRemoveFollowerModal(user.id)}
+                  style={{ marginRight: 8 }}
+                >
+                  <ButtonIcon as={UserX} />
+                </Button>
+              ) : null}
+              
+              {item.isFollowing ? (
+                // Following button (can be unfollowed)
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPress={() => openUnfollowModal(user.id)}
+                >
+                  <ButtonText>Following</ButtonText>
+                </Button>
+              ) : (
+                // Follow button
+                <Button
+                  size="sm"
+                  onPress={() => handleFollow(user.id)}
+                >
+                  <ButtonText>Follow</ButtonText>
+                </Button>
+              )}
+            </View>
           )}
         </View>
       );
     },
-    [currentUser?.id, isFollowersModalOpen, isFollowingModalOpen]
+    [isCurrentUser, isFollowersModalOpen, isFollowingModalOpen, currentUser?.id, openRemoveFollowerModal, openUnfollowModal, handleFollow]
   );
 
   /**
@@ -609,7 +707,7 @@ const updateFollowStatus = useCallback((targetUserId: string, isFollowing: boole
                 </ClimbCardWrapper>
               ))}
             </ClimbGridContent>
-            </ClimbGridContainer>
+          </ClimbGridContainer>
         </ContentContainer>
       </ScrollView>
 
@@ -659,6 +757,13 @@ const updateFollowStatus = useCallback((targetUserId: string, isFollowing: boole
         isOpen={isUnfollowModalOpen}
         onClose={closeUnfollowModal}
         onConfirm={confirmUnfollow}
+        t={t}
+      />
+
+      <RemoveFollowerModal
+        isOpen={isRemoveFollowerModalOpen}
+        onClose={closeRemoveFollowerModal}
+        onConfirm={confirmRemoveFollower}
         t={t}
       />
     </MainContainer>
@@ -841,6 +946,36 @@ const UnfollowModal = ({ isOpen, onClose, onConfirm, t }: {
         </Button>
         <Button variant="solid" onPress={onConfirm} className="ml-2">
           <ButtonText>{t("Unfollow")}</ButtonText>
+        </Button>
+      </ModalFooter>
+    </ModalContentStyled>
+  </ModalStyled>
+);
+
+const RemoveFollowerModal = ({ isOpen, onClose, onConfirm, t }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  t: (key: string) => string;
+}) => (
+  <ModalStyled isOpen={isOpen} onClose={onClose} closeOnOverlayClick>
+    <ModalContentStyled>
+      <ModalHeader>
+        <Text className="text-lg font-semibold">
+          {t("Remove Follower")}
+        </Text>
+      </ModalHeader>
+      <ModalBodyStyled>
+        <Text className="text-sm">
+          {t("Are you sure you want to remove this follower?")}
+        </Text>
+      </ModalBodyStyled>
+      <ModalFooter>
+        <Button variant="outline" onPress={onClose}>
+          <ButtonText>{t("Cancel")}</ButtonText>
+        </Button>
+        <Button variant="solid" onPress={onConfirm} className="ml-2">
+          <ButtonText>{t("Remove")}</ButtonText>
         </Button>
       </ModalFooter>
     </ModalContentStyled>
