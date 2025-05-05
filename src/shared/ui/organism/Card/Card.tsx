@@ -1,4 +1,4 @@
-import { Icon, Text } from "@gluestack-ui/themed";
+import { Icon, Pressable, Text } from "@gluestack-ui/themed";
 import React from "react";
 import {
   StyledCard,
@@ -21,6 +21,7 @@ interface GenericCardProps {
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
   isLiked?: boolean;
+  onPress?: () => void;
   [key: string]: any;
 }
 
@@ -36,44 +37,47 @@ const GenericCard: React.FC<GenericCardProps> = ({
   onPrimaryAction,
   onSecondaryAction,
   isLiked,
+  onPress,
   ...props
 }) => {
   const imageSrc = imageUrl || "https://placehold.co/600x400";
 
   return (
     <StyledCard {...props}>
-      <StyledImage source={{ uri: imageSrc }} alt="Imagen" />
-      <StyledTitle>{title}</StyledTitle>
-      {subtitle && <StyledText>{subtitle}</StyledText>}
-      {description && <StyledText>{description}</StyledText>}
-      <StyledFooter>
-        <StyledIconButton
-          onPress={onPrimaryAction}
-          style={{
-            backgroundColor: isLiked ? "#4B8CFC" : "transparent",
-            borderRadius: 8,
-            padding: 6,
-          }}
-        >
-          <Icon
-            as={primaryIcon}
+      <Pressable onPress={onPress}>
+        <StyledImage source={{ uri: imageSrc }} alt="Imagen" />
+        <StyledTitle>{title}</StyledTitle>
+        {subtitle && <StyledText>{subtitle}</StyledText>}
+        {description && <StyledText>{description}</StyledText>}
+        <StyledFooter>
+          <StyledIconButton
+            onPress={onPrimaryAction}
             style={{
-              marginRight: 8,
-              color: isLiked ? "#FFF" : "#4B8CFC",
+              backgroundColor: isLiked ? "#4B8CFC" : "transparent",
+              borderRadius: 8,
+              padding: 6,
             }}
-          />
-          <Text style={{ color: isLiked ? "#FFF" : "#000" }}>
-            {primaryActionCount}
-          </Text>
-        </StyledIconButton>
-        <StyledIconButton onPress={onSecondaryAction}>
-          <Icon
-            as={secondaryIcon}
-            style={{ marginRight: 8, color: "#4B8CFC" }}
-          />
-          <Text>{secondaryActionCount}</Text>
-        </StyledIconButton>
-      </StyledFooter>
+          >
+            <Icon
+              as={primaryIcon}
+              style={{
+                marginRight: 8,
+                color: isLiked ? "#FFF" : "#4B8CFC",
+              }}
+            />
+            <Text style={{ color: isLiked ? "#FFF" : "#000" }}>
+              {primaryActionCount}
+            </Text>
+          </StyledIconButton>
+          <StyledIconButton onPress={onSecondaryAction}>
+            <Icon
+              as={secondaryIcon}
+              style={{ marginRight: 8, color: "#4B8CFC" }}
+            />
+            <Text>{secondaryActionCount}</Text>
+          </StyledIconButton>
+        </StyledFooter>
+      </Pressable>
     </StyledCard>
   );
 };

@@ -6,7 +6,7 @@ import { HStack } from "@/src/components/ui/hstack";
 import { Text } from "@/src/components/ui/text";
 import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "@gluestack-style/react";
-import { Href } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import {
   HomeIcon,
   MessageCircle,
@@ -109,6 +109,7 @@ const MainContent = () => {
   const [loading, setLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     loadClimbs();
@@ -197,6 +198,12 @@ const MainContent = () => {
             isLiked={climb.isLiked}
             imageUrl={climb.imageUrl || "https://placehold.co/600x400"}
             maxWidth={425}
+            onPress={() =>
+              router.navigate({
+                pathname: `/view-climb/view-climb`,
+                params: { climbId: climb.id },
+              })
+            }
           />
         ))
       )}
