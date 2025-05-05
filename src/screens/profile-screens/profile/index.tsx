@@ -519,7 +519,7 @@ const ProfileScreen = () => {
             style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
             onPress={handlePressUser}
           >
-            <Avatar size="sm" source={  user.profileImage} />
+            {/* <Avatar size="sm" source={  user?.profileImage} /> */}
             <View style={{ marginLeft: 12 }}>
               <Text style={{ fontWeight: '600', fontSize: 16 }}>{user.username}</Text>
             </View>
