@@ -9,9 +9,13 @@ import {
   Bluetooth,
   Calendar,
   Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
   Heart,
   MapPin,
   MessageCircle,
+  Star,
   Tag,
   ThumbsUp,
   User,
@@ -70,7 +74,37 @@ interface Climb {
   };
   tags?: string[];
   isAscended?: boolean;
+  userRating?: number;
+  difficultyPerception?: "easier" | "accurate" | "harder";
 }
+
+const StarRating = ({
+  rating,
+  setRating,
+}: {
+  rating: number;
+  setRating: (value: number) => void;
+}) => {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        marginVertical: 10,
+        justifyContent: "center",
+      }}
+    >
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Button
+          key={star}
+          onPress={() => setRating(star)}
+          style={{ padding: 4, backgroundColor: "transparent" }}
+        >
+          <ButtonIcon as={Star} color={star <= rating ? "#FFD700" : "#ccc"} />
+        </Button>
+      ))}
+    </View>
+  );
+};
 
 const MainContent = () => {
   const params = useLocalSearchParams();
@@ -79,6 +113,12 @@ const MainContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoadingCompletion, setIsLoadingCompletion] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [difficultyPerception, setDifficultyPerception] = useState<
+    "easier" | "accurate" | "harder"
+  >("accurate");
+  const [isRatingLoading, setIsRatingLoading] = useState(false);
+  const [showRating, setShowRating] = useState(false);
   const toast = useToast();
 
   const {
@@ -100,7 +140,14 @@ const MainContent = () => {
         const climbData = await fetchClimb(climbId || "");
         console.log("Climb data:", climbData);
         setClimb(climbData);
-        setIsCompleted(climbData.isAscended || false); // Actualiza estado de completado
+        setIsCompleted(climbData.isAscended || false);
+        if (climbData.userRating) {
+          setUserRating(climbData.userRating);
+        }
+        if (climbData.difficultyPerception) {
+          setDifficultyPerception(climbData.difficultyPerception);
+        }
+        setShowRating(false); // No mostrar rating al cargar inicialmente
       } catch (err) {
         console.error("Failed to fetch climb:", err);
       } finally {
@@ -111,29 +158,6 @@ const MainContent = () => {
     fetchClimbData();
   }, [climbId]);
 
-  if (isLoading) {
-    return (
-      <SafeAreaView
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      >
-        <ActivityIndicator size="large" />
-      </SafeAreaView>
-    );
-  }
-
-  if (!climb) {
-    return (
-      <SafeAreaView
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      >
-        <Text>No se encontró la ruta</Text>
-        <Button onPress={() => router.back()}>
-          <ButtonText>Volver</ButtonText>
-        </Button>
-      </SafeAreaView>
-    );
-  }
-
   const handleCompleteClimb = async () => {
     if (!climbId) return;
 
@@ -142,6 +166,7 @@ const MainContent = () => {
       console.log("Completing climb:", climbId, "Type:", ASCENSION_TYPE.FLASH);
       await ascendClimb(climbId, ASCENSION_TYPE.FLASH);
       setIsCompleted(true);
+      setShowRating(true); // Mostrar el rating solo después de completar
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="success">
@@ -150,7 +175,6 @@ const MainContent = () => {
         ),
       });
 
-      // Opcional: Refrescar datos del climb
       const response = await fetchClimb(climbId);
       if (response.data) {
         setClimb(response.data);
@@ -165,6 +189,95 @@ const MainContent = () => {
       });
     } finally {
       setIsLoadingCompletion(false);
+    }
+  };
+
+  const DifficultyPerception = ({
+    value,
+    onChange,
+  }: {
+    value: "easier" | "accurate" | "harder";
+    onChange: (value: "easier" | "accurate" | "harder") => void;
+  }) => {
+    return (
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "center",
+          marginVertical: 10,
+        }}
+      >
+        <Button
+          variant={value === "easier" ? "solid" : "outline"}
+          onPress={() => onChange("easier")}
+          style={{ marginHorizontal: 4 }}
+        >
+          <ButtonIcon
+            as={ChevronDown}
+            color={value === "accurate" ? "white" : "#555"}
+          />
+          <ButtonText>Easier</ButtonText>
+        </Button>
+
+        <Button
+          variant={value === "accurate" ? "solid" : "outline"}
+          onPress={() => onChange("accurate")}
+          style={{ marginHorizontal: 4 }}
+        >
+          <ButtonIcon
+            as={ChevronRight}
+            color={value === "accurate" ? "white" : "#555"}
+          />
+          <ButtonText>Accurate</ButtonText>
+        </Button>
+
+        <Button
+          variant={value === "harder" ? "solid" : "outline"}
+          onPress={() => onChange("harder")}
+          style={{ marginHorizontal: 4 }}
+        >
+          <ButtonIcon
+            as={ChevronUp}
+            color={value === "harder" ? "white" : "#555"}
+          />
+          <ButtonText>Harder</ButtonText>
+        </Button>
+      </View>
+    );
+  };
+
+  const saveRating = async () => {
+    if (!climbId) return;
+
+    setIsRatingLoading(true);
+    try {
+      // await handleRequest({
+      //   url: `/climbs/${climbId}/rate`,
+      //   method: 'POST',
+      //   data: {
+      //     rating: userRating,
+      //     difficultyPerception
+      //   }
+      // });
+
+      setShowRating(false); // Ocultar el rating después de enviarlo
+      toast.show({
+        render: ({ id }) => (
+          <Toast nativeID={id} action="success">
+            <ToastTitle>Rating saved successfully!</ToastTitle>
+          </Toast>
+        ),
+      });
+    } catch (error) {
+      toast.show({
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error">
+            <ToastTitle>Error saving rating</ToastTitle>
+          </Toast>
+        ),
+      });
+    } finally {
+      setIsRatingLoading(false);
     }
   };
 
@@ -226,12 +339,25 @@ const MainContent = () => {
     }
   };
 
-  if (isLoading || !climb) {
+  if (isLoading) {
     return (
       <SafeAreaView
         style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
       >
         <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!climb) {
+    return (
+      <SafeAreaView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <Text>No se encontró la ruta</Text>
+        <Button onPress={() => router.back()}>
+          <ButtonText>Volver</ButtonText>
+        </Button>
       </SafeAreaView>
     );
   }
@@ -365,6 +491,42 @@ const MainContent = () => {
               </Text>
             </ButtonText>
           </Button>
+
+          {isCompleted && showRating && (
+            <View
+              style={{
+                marginTop: 20,
+                padding: 16,
+                backgroundColor: "#f5f5f5",
+                borderRadius: 8,
+              }}
+            >
+              <SectionTitle>Rate this climb</SectionTitle>
+
+              <Text style={{ marginBottom: 8, textAlign: "center" }}>
+                How would you rate this climb?
+              </Text>
+              <StarRating rating={userRating} setRating={setUserRating} />
+
+              <Text style={{ marginBottom: 8, textAlign: "center" }}>
+                How did the difficulty feel?
+              </Text>
+              <DifficultyPerception
+                value={difficultyPerception}
+                onChange={setDifficultyPerception}
+              />
+
+              <Button
+                onPress={saveRating}
+                disabled={isRatingLoading || userRating === 0}
+                style={{ marginTop: 16 }}
+              >
+                <ButtonText>
+                  {isRatingLoading ? "Saving..." : "Submit Rating"}
+                </ButtonText>
+              </Button>
+            </View>
+          )}
 
           <StatsContainer>
             <StatItem>
