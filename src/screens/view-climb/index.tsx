@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Bluetooth,
   Calendar,
+  Heart,
   MapPin,
   MessageCircle,
   Tag,
@@ -278,7 +279,7 @@ const MainContent = () => {
           <StatsContainer>
             <StatItem>
               <DetailRow>
-                <ThumbsUp size={18} color="#555" />
+                <Heart size={18} color="red" />
                 <StatValue>{climb.likesCount}</StatValue>
               </DetailRow>
               <StatLabel>Likes</StatLabel>

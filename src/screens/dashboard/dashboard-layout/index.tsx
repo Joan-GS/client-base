@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "@gluestack-style/react";
 import { Href, useRouter } from "expo-router";
 import {
+  Heart,
   HomeIcon,
   MessageCircle,
   Plus,
@@ -191,7 +192,7 @@ const MainContent = () => {
             description={climb.description || ""}
             primaryActionCount={climb.likesCount}
             secondaryActionCount={climb.commentsCount}
-            primaryIcon={ThumbsUp}
+            primaryIcon={Heart}
             secondaryIcon={MessageCircle}
             onPrimaryAction={() => handleToggleLike(climb.id, climb.isLiked)}
             onSecondaryAction={() => console.log("💬 Open comment!")}

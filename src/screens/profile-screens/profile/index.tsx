@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, View, FlatList } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowLeft,
+  Heart,
   LogOutIcon,
   MessageCircle,
   ThumbsUp,
@@ -635,7 +636,7 @@ const ProfileScreen = () => {
                     description={climb.description || ""}
                     primaryActionCount={climb.likesCount}
                     secondaryActionCount={climb.commentsCount}
-                    primaryIcon={ThumbsUp}
+                    primaryIcon={Heart}
                     secondaryIcon={MessageCircle}
                     onPrimaryAction={() =>
                       handleToggleLike(climb.id, climb.isLiked)

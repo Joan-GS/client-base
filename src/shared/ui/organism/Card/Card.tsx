@@ -50,29 +50,20 @@ const GenericCard: React.FC<GenericCardProps> = ({
         {subtitle && <StyledText>{subtitle}</StyledText>}
         {description && <StyledText>{description}</StyledText>}
         <StyledFooter>
-          <StyledIconButton
-            onPress={onPrimaryAction}
-            style={{
-              backgroundColor: isLiked ? "#4B8CFC" : "transparent",
-              borderRadius: 8,
-              padding: 6,
-            }}
-          >
+          <StyledIconButton onPress={onPrimaryAction}>
             <Icon
               as={primaryIcon}
+              fill={isLiked ? "red" : "transparent"}
               style={{
                 marginRight: 8,
-                color: isLiked ? "#FFF" : "#4B8CFC",
               }}
             />
-            <Text style={{ color: isLiked ? "#FFF" : "#000" }}>
-              {primaryActionCount}
-            </Text>
+            <Text>{primaryActionCount}</Text>
           </StyledIconButton>
           <StyledIconButton onPress={onSecondaryAction}>
             <Icon
               as={secondaryIcon}
-              style={{ marginRight: 8, color: "#4B8CFC" }}
+              style={{ marginRight: 8, color: "black" }}
             />
             <Text>{secondaryActionCount}</Text>
           </StyledIconButton>
