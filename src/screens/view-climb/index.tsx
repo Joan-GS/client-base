@@ -3,11 +3,12 @@ import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 
 import React, { useState, useEffect } from "react";
 import { useLocalSearchParams, router } from "expo-router";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, View, Text } from "react-native";
 import {
   ArrowLeft,
   Bluetooth,
   Calendar,
+  Check,
   Heart,
   MapPin,
   MessageCircle,
@@ -43,10 +44,12 @@ import {
 
 // API
 import { handleRequest } from "@/src/utils/api/https.utils";
-import { ButtonIcon, ButtonText} from "@gluestack-ui/themed";
+import { ButtonIcon } from "@gluestack-ui/themed";
 import useBLE from "@/src/hooks/useBLE";
 import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
-
+import { Button, ButtonText } from "@/src/components/ui/button";
+import { ascendClimb, fetchClimb } from "./api/view-climb";
+import { ASCENSION_TYPE } from "@joan16/shared-base";
 
 // Types
 interface Climb {
@@ -66,6 +69,7 @@ interface Climb {
     name: string;
   };
   tags?: string[];
+  isAscended?: boolean;
 }
 
 const MainContent = () => {
@@ -73,7 +77,8 @@ const MainContent = () => {
   const climbId = params.climbId as string | undefined;
   const [climb, setClimb] = useState<Climb | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showWebAlert, setShowWebAlert] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isLoadingCompletion, setIsLoadingCompletion] = useState(false);
   const toast = useToast();
 
   const {
@@ -90,26 +95,87 @@ const MainContent = () => {
   } = useBLE();
 
   useEffect(() => {
-    const fetchClimb = async () => {
+    const fetchClimbData = async () => {
       try {
-        const data = await handleRequest<Climb>(`/climbs/${climbId}`, "GET");
-        setClimb(data);
-      } catch (error) {
-        console.error("Failed to fetch climb:", error);
+        const climbData = await fetchClimb(climbId || "");
+        console.log("Climb data:", climbData);
+        setClimb(climbData);
+        setIsCompleted(climbData.isAscended || false); // Actualiza estado de completado
+      } catch (err) {
+        console.error("Failed to fetch climb:", err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchClimb();
+    fetchClimbData();
   }, [climbId]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!climb) {
+    return (
+      <SafeAreaView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
+        <Text>No se encontró la ruta</Text>
+        <Button onPress={() => router.back()}>
+          <ButtonText>Volver</ButtonText>
+        </Button>
+      </SafeAreaView>
+    );
+  }
+
+  const handleCompleteClimb = async () => {
+    if (!climbId) return;
+
+    setIsLoadingCompletion(true);
+    try {
+      console.log("Completing climb:", climbId, "Type:", ASCENSION_TYPE.FLASH);
+      await ascendClimb(climbId, ASCENSION_TYPE.FLASH);
+      setIsCompleted(true);
+      toast.show({
+        render: ({ id }) => (
+          <Toast nativeID={id} action="success">
+            <ToastTitle>¡Ascensión registrada correctamente!</ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Opcional: Refrescar datos del climb
+      const response = await fetchClimb(climbId);
+      if (response.data) {
+        setClimb(response.data);
+      }
+    } catch (error) {
+      toast.show({
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error">
+            <ToastTitle>Error al registrar la ascensión</ToastTitle>
+          </Toast>
+        ),
+      });
+    } finally {
+      setIsLoadingCompletion(false);
+    }
+  };
 
   const sendToBluetooth = async () => {
     if (isWeb) {
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
-            <ToastTitle>Bluetooth functionality is not available in web version</ToastTitle>
+            <ToastTitle>
+              Bluetooth functionality is not available in web version
+            </ToastTitle>
           </Toast>
         ),
       });
@@ -213,7 +279,7 @@ const MainContent = () => {
             disabled={isScanning || isConnecting || isSending}
           >
             <ButtonIcon as={Bluetooth} color="#fff" />
-            <ButtonText color="#fff">
+            <ButtonText>
               {isSending
                 ? "Sending..."
                 : isConnecting
@@ -275,6 +341,30 @@ const MainContent = () => {
               </TagsContainer>
             </>
           )}
+
+          <Button
+            onPress={handleCompleteClimb}
+            disabled={isCompleted || isLoadingCompletion}
+            style={{
+              backgroundColor: isCompleted ? "#ccc" : "#4CAF50",
+              marginTop: 20,
+              maxWidth: 900,
+              minWidth: 300,
+              alignSelf: "center",
+            }}
+          >
+            <ButtonIcon as={isCompleted ? Check : Check} color={"white"} />
+
+            <ButtonText>
+              <Text>
+                {isLoadingCompletion
+                  ? "Saving..."
+                  : isCompleted
+                  ? "Completed"
+                  : "Log Ascent"}
+              </Text>
+            </ButtonText>
+          </Button>
 
           <StatsContainer>
             <StatItem>

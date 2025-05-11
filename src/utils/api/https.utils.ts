@@ -25,21 +25,44 @@ export const handleRequest = async <T>(
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
   body?: object
 ): Promise<T> => {
-  const { token } = await getAuthToken();
+  try {
+    const { token } = await getAuthToken();
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+    };
 
-  const responseData = await response.json();
+    // Solo añadir Content-Type si hay body
+    if (body) {
+      headers['Content-Type'] = 'application/json';
+    }
 
-  if (!response.ok || !responseData.success) {
-    throw new Error(responseData.message || "Error en la petición");
+    const config: RequestInit = {
+      method,
+      headers,
+    };
+
+    // Añadir body solo si existe y no es GET
+    if (body && method !== "GET") {
+      config.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+
+    // Verificar si la respuesta no tiene contenido (204)
+    if (response.status === 204) {
+      return undefined as unknown as T;
+    }
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    return responseData.data as T;
+  } catch (error) {
+    console.error(`Request failed to ${endpoint}:`, error);
+    throw error;
   }
-
-  return responseData.data as T;
 };
