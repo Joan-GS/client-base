@@ -315,7 +315,12 @@ const MainContent = () => {
           ) : (
             <>
               {climbs.map((climb) => (
-                <ClimbItem key={climb.id}>
+                <ClimbItem key={climb.id}  onPress={() =>
+                  router.navigate({
+                    pathname: `/view-climb/view-climb`,
+                    params: { climbId: climb.id },
+                  })
+                }>
                   <ClimbRow>
                     <ClimbTitle>{climb.title}</ClimbTitle>
                     <ClimbGrade>{climb.grade}</ClimbGrade>

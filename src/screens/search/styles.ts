@@ -1,5 +1,5 @@
 import { styled } from "@gluestack-style/react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { Button } from "@/src/components/ui/button";
 import { HStack, VStack } from "@gluestack-ui/themed";
 
@@ -63,7 +63,7 @@ export const EmptyStateText = styled(Text, {
   textAlign: "center",
 });
 
-export const ClimbItem = styled(View, {
+export const ClimbItem = styled(Pressable, {
   padding: 16,
   marginBottom: 8,
   borderRadius: 12,
