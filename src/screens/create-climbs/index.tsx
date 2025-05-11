@@ -28,6 +28,7 @@ import {
 } from "./styles";
 import { CreateClimbForm } from "./components/CreateClimbForm";
 import ViewShot from "react-native-view-shot";
+import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
 
 // ====================== CONSTANTS ======================
 const COORDINATE_MULTIPLIER = 7.5;
@@ -122,6 +123,7 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
   const [hoveredHold, setHoveredHold] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const [bluetoothData, setBluetoothData] = useState<string>("");
+  const toast = useToast();
 
   // Animation refs
   const scale = useRef(new Animated.Value(1)).current;
@@ -316,6 +318,25 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
 
   const handleNextPress = async () => {
     try {
+      console.log("Selected Holds:", selectedHolds);
+      const holdsArray = Object.values(selectedHolds);
+      const hasStart = holdsArray.includes("green");
+      const hasEnd = holdsArray.includes("magenta");
+
+      if (!hasStart || !hasEnd || holdsArray.length == 0) {
+        toast.show({
+          render: ({ id }) => (
+            <Toast nativeID={id} action="error">
+              <ToastTitle>
+                Debes seleccionar al menos un inicio (verde) y un final
+                (magenta)
+              </ToastTitle>
+            </Toast>
+          ),
+        });
+        return;
+      }
+
       const uri = await viewShotRef.current?.capture?.();
       onNext({
         bluetoothData,
@@ -370,7 +391,7 @@ const CreateClimbScreen: React.FC<CreateClimbScreenProps> = ({
         minDist={10}
         avgTouches
         enabled={isZoomed}
-        >
+      >
         <View style={{ flex: 1 }}>
           <ViewShot
             ref={viewShotRef}
