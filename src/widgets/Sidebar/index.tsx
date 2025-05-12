@@ -25,10 +25,17 @@ export const Sidebar = ({ tabs }: SidebarProps) => {
           key={index}
           className="hover:bg-background-50"
           onPress={() => handlePress(index, item.route)}
+          style={{
+            backgroundColor:
+              selectedIndex === index ? "#f0f0f0" : "transparent",
+            borderRadius: selectedIndex === index ? 8 : 0,
+          }}
         >
           <SidebarIcon
             as={item.iconName}
-            className={index === selectedIndex ? "selected" : ""}
+            style={{
+              color: selectedIndex === index ? "#000" : "#888",
+            }}
           />
         </SidebarButton>
       ))}
