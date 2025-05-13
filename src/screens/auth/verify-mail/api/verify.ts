@@ -1,38 +1,26 @@
-// verifyService.ts
+import { handlePublicRequest } from "@/src/utils/api/https.utils";
 
 export interface VerifyResponse {
   success?: boolean;
 }
 
-export const verifyAccount = async (
-  code: string
-): Promise<VerifyResponse> => {
+/**
+ * Sends a request to the backend to verify the account using a code.
+ */
+export const verifyAccount = async (code: string): Promise<VerifyResponse> => {
   try {
-    // Step 1: Verify the account (waiting for the verification process to complete first)
-    const response = await fetch("http://localhost:8080/api/v1/auth/confirm", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        code, // Dynamic value
-      }),
-    });
+    const response = await handlePublicRequest<VerifyResponse>(
+      "/auth/confirm",
+      "POST",
+      { code }
+    );
 
-    // Handle verification failure
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Verification failed");
-    }
-
-    // Return successful verification response
-    return { success: true };
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      // If an error occurs during verification, throw it
-      throw new Error(error.message || "An unexpected error occurred");
-    }
-    // In case of an unknown error
-    throw new Error("An unknown error occurred");
+    return {
+      success: true,
+    };
+  } catch (error) {
+    throw new Error(
+      error instanceof Error ? error.message : "An unknown error occurred"
+    );
   }
 };
