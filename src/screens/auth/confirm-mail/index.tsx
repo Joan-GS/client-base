@@ -11,8 +11,8 @@ import {
   Heading,
   Text,
   SuccessText,
-  ButtonTextStyled,
 } from "./styles";
+import { GenericButton } from "@/src/shared";
 
 const ConfirmMailPage = () => {
   const { t } = useTranslation();
@@ -20,13 +20,13 @@ const ConfirmMailPage = () => {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Obtener email y asegurarse de que sea un string
+  // Get email from route params
   const params = useLocalSearchParams();
   const email = Array.isArray(params.email)
     ? params.email[0]
     : params.email || "";
 
-  // Resend verification email
+  // Trigger resend email logic
   const handleResendCode = async () => {
     if (!email) {
       toast.show({
@@ -87,15 +87,11 @@ const ConfirmMailPage = () => {
           </SuccessText>
         )}
 
-        <Button
-          className="w-full"
+        <GenericButton
+          label={loading ? t("Resending...") : t("Resend Email")}
           onPress={handleResendCode}
           disabled={loading}
-        >
-          <ButtonTextStyled>
-            {loading ? t("Resending...") : t("Resend Email")}
-          </ButtonTextStyled>
-        </Button>
+        />
       </MessageContainer>
     </VStackContainer>
   );

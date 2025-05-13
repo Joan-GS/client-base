@@ -1,53 +1,33 @@
-import React, { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import React from "react";
+import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { router } from "expo-router";
-import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
-import { Heading } from "@/src/components/ui/heading";
-import { Text } from "@/src/components/ui/text";
-import {
-  Input,
-  InputField,
-  InputIcon,
-  InputSlot,
-} from "@/src/components/ui/input";
-import {
-  FormControl,
-  FormControlError,
-  FormControlErrorText,
-  FormControlLabel,
-  FormControlLabelText,
-} from "@/src/components/ui/form-control";
-import { CheckIcon, EyeIcon, EyeOffIcon } from "@/src/components/ui/icon";
-import {
-  Checkbox,
-  CheckboxIcon,
-  CheckboxIndicator,
-  CheckboxLabel,
-} from "@/src/components/ui/checkbox";
-import { GoogleIcon } from "./assets/icons/google";
+import { useToast, Toast, ToastTitle } from "@/src/components/ui/toast";
 
-// Import styles and logo
+import { useTranslation } from "react-i18next";
+import { loginUser, useInitializeUser } from "./api/login";
 import {
   FormsContainer,
   LoginTextsContainer,
   LoginWithLeftBackgroundContainer,
-  Button,
-  LinkText,
   VStackContainer,
   HStackContainer,
-  SignUpContainer,
 } from "./styles";
-
-import { loginUser, useInitializeUser } from "./api/login";
 import { AuthLayout } from "../layout";
-import { ButtonIcon, ButtonText } from "@/src/components/ui/button";
-import { Link } from "@/src/components/ui/link";
-import { useTranslation } from "react-i18next";
-import { Pressable } from "@/src/components/ui/pressable";
+import { GoogleIcon } from "./assets/icons/google";
+import {
+  ForgotPasswordLink,
+  GenericButton,
+  GenericControlledCheckbox,
+  GenericControlledInput,
+  SignupPrompt,
+} from "@/src/shared";
+import { Text } from "@/src/components/ui/text";
+import { Heading } from "@/src/components/ui/heading";
 
-// Validation schema for login form using yup
+
+// Validation schema
 const loginSchema = yup.object().shape({
   email: yup.string().email("Invalid email").required("Email is required"),
   password: yup.string().required("Password is required"),
@@ -60,25 +40,19 @@ const LoginWithLeftBackground = () => {
   const {
     control,
     handleSubmit,
-    reset,
     formState: { errors },
   } = useForm<LoginSchemaType>({
     resolver: yupResolver(loginSchema),
   });
 
   const toast = useToast();
-  const [showPassword, setShowPassword] = useState(false);
-
   const { t } = useTranslation();
-  const loadUser = useInitializeUser(); // Llamar al hook de inicialización del usuario
+  const loadUser = useInitializeUser();
 
-  // Submit form handler
   const onSubmit = async (data: LoginSchemaType) => {
     try {
-      // Attempt login with credentials
-      const response = await loginUser(data.email, data.password);
+      await loginUser(data.email, data.password);
 
-      // Show success toast message
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="success">
@@ -87,13 +61,9 @@ const LoginWithLeftBackground = () => {
         ),
       });
 
-      // Llamar al hook para cargar los datos del usuario después de un login exitoso
-      loadUser(); // Cargar el usuario
-
-      // Redirect user to the dashboard
+      loadUser();
       router.push("/dashboard/dashboard-layout");
-    } catch (error) {
-      // Show error toast message if login fails
+    } catch {
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
@@ -106,124 +76,60 @@ const LoginWithLeftBackground = () => {
 
   return (
     <LoginWithLeftBackgroundContainer>
-      {/* Login text section */}
+      {/* Header */}
       <LoginTextsContainer>
         <Heading size="3xl">{t("Log in")}</Heading>
         <Text>{t("Login to start using gluestack")}</Text>
       </LoginTextsContainer>
 
-      {/* Login form */}
+      {/* Form */}
       <FormsContainer>
-        {/* Email input */}
-        <FormControl isInvalid={!!errors.email}>
-          <FormControlLabel>
-            <FormControlLabelText>{t("Email")}</FormControlLabelText>
-          </FormControlLabel>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field }) => (
-              <Input>
-                <InputField {...field} placeholder={t("Enter email")} />
-              </Input>
-            )}
-          />
-          {errors.email && (
-            <FormControlError>
-              <FormControlErrorText>
-                {"* " + errors.email.message}
-              </FormControlErrorText>
-            </FormControlError>
-          )}
-        </FormControl>
-
-        {/* Password input */}
-        <FormControl isInvalid={!!errors.password}>
-          <FormControlLabel>
-            <FormControlLabelText>{t("Password")}</FormControlLabelText>
-          </FormControlLabel>
-          <Controller
-            control={control}
-            name="password"
-            render={({ field }) => (
-              <Input>
-                <InputField
-                  {...field}
-                  placeholder={t("Enter password")}
-                  type={showPassword ? "text" : "password"}
-                />
-                <InputSlot
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={{ paddingRight: 12 }}
-                >
-                  <InputIcon as={showPassword ? EyeIcon : EyeOffIcon} />
-                </InputSlot>
-              </Input>
-            )}
-          />
-          {errors.password && (
-            <FormControlError>
-              <FormControlErrorText>
-                {"* " + errors.password.message}
-              </FormControlErrorText>
-            </FormControlError>
-          )}
-        </FormControl>
-
-        {/* Remember me checkbox */}
+        <GenericControlledInput
+          control={control}
+          name="email"
+          label={t("Email")}
+          placeholder={t("Enter email")}
+          error={errors.email?.message}
+        />
+        <GenericControlledInput
+          control={control}
+          name="password"
+          label={t("Password")}
+          placeholder={t("Enter password")}
+          error={errors.password?.message}
+          isPasswordField
+        />
         <HStackContainer>
-          <Controller
-            name="rememberme"
-            defaultValue={false}
+          <GenericControlledCheckbox
             control={control}
-            render={({ field: { onChange, value } }) => (
-              <Checkbox
-                size="sm"
-                value="Remember me"
-                isChecked={value}
-                onChange={onChange}
-              >
-                <CheckboxIndicator>
-                  <CheckboxIcon as={CheckIcon} />
-                </CheckboxIndicator>
-                <CheckboxLabel>{t("Remember me")}</CheckboxLabel>
-              </Checkbox>
-            )}
+            name="rememberme"
+            label={t("Remember me")}
           />
-          {/* Forgot password link */}
-          <Link href="/auth/forgot-password">
-            <LinkText className="font-medium text-primary-700">
-              {t("Forgot Password?")}{" "}
-            </LinkText>
-          </Link>
+          <ForgotPasswordLink label={t("Forgot Password?")} />
         </HStackContainer>
       </FormsContainer>
 
-      {/* Action buttons */}
+      {/* Buttons */}
       <VStackContainer>
-        <Button onPress={handleSubmit(onSubmit)}>
-          <ButtonText>{t("Log in")}</ButtonText>
-        </Button>
-        <Button variant="outline" onPress={() => {}}>
-          <ButtonText>{t("Continue with Google")}</ButtonText>
-          <ButtonIcon as={GoogleIcon} />
-        </Button>
+        <GenericButton label={t("Log in")} onPress={handleSubmit(onSubmit)} />
+        {/* <GenericButton
+          label={t("Continue with Google")}
+          onPress={() => {}}
+          icon={GoogleIcon}
+          variant="outline"
+        /> */}
       </VStackContainer>
 
-      {/* Sign-up prompt */}
-      <SignUpContainer>
-        <Text>{t("Don't have an account?")}</Text>
-        <Pressable onPress={() => router.push("/auth/signup")}>
-          <LinkText className="font-medium text-primary-700">
-            {t("Sign up")}{" "}
-          </LinkText>
-        </Pressable>
-      </SignUpContainer>
+      {/* Navigation */}
+      <SignupPrompt
+        message={t("Don't have an account?")}
+        actionText={t("Sign up")}
+        redirectTo="/auth/signup"
+      />
     </LoginWithLeftBackgroundContainer>
   );
 };
 
-// Wrapping the login component inside the AuthLayout
 export const SignIn = () => (
   <AuthLayout>
     <LoginWithLeftBackground />

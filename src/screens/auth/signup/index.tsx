@@ -1,61 +1,36 @@
 import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import { Keyboard, Platform } from "react-native";
+import { useMediaQuery } from "@gluestack-style/react";
+import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
+
 import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
 import { Heading } from "@/src/components/ui/heading";
 import { Text } from "@/src/components/ui/text";
-import { LinkText } from "@/src/components/ui/link";
-import { Link } from "@/src/components/ui/link";
-import {
-  FormControl,
-  FormControlError,
-  FormControlErrorText,
-  FormControlLabel,
-  FormControlLabelText,
-} from "@/src/components/ui/form-control";
-import {
-  Input,
-  InputField,
-  InputIcon,
-  InputSlot,
-} from "@/src/components/ui/input";
-import {
-  Checkbox,
-  CheckboxIcon,
-  CheckboxIndicator,
-  CheckboxLabel,
-} from "@/src/components/ui/checkbox";
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  EyeIcon,
-  EyeOffIcon,
-  Icon,
-} from "@/src/components/ui/icon";
-import { Button, ButtonText, ButtonIcon } from "@/src/components/ui/button";
-import { Keyboard } from "react-native";
-import { useForm, Controller } from "react-hook-form";
-import * as Yup from "yup";
-import { yupResolver } from "@hookform/resolvers/yup";
-import { GoogleIcon } from "./assets/icons/google";
 import { Pressable } from "@/src/components/ui/pressable";
+import { Icon } from "@/src/components/ui/icon";
 import { AuthLayout } from "../layout";
-import { router } from "expo-router";
+import { ArrowLeftIcon } from "@/src/components/ui/icon";
 import {
   ButtonsContainer,
   FormsContainer,
   LoginTextsContainer,
-  SignUpContainer,
   VStackContainer,
 } from "./styles";
-import { useTranslation } from "react-i18next";
-import { useMediaQuery } from "@gluestack-style/react";
 import { registerUser } from "./api/register";
+import {
+  GenericControlledInput,
+  GenericControlledCheckbox,
+  GenericDatePicker,
+} from "@/src/shared/ui/molecules";
+import { GenericButton, GenericSelect } from "@/src/shared/ui/atoms";
+import { SignupPrompt } from "@/src/shared";
 
-// Validation schema using Yup
 const signUpSchema = Yup.object().shape({
-  username: Yup.string()
-    .min(3, "Username must be at least 3 characters")
-    .max(20, "Username must be at most 20 characters")
-    .required("Username is required"),
+  username: Yup.string().min(3).max(20).required("Username is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters")
@@ -73,57 +48,54 @@ const signUpSchema = Yup.object().shape({
   rememberme: Yup.boolean()
     .oneOf([true], "You must accept the Terms of Use and Privacy Policy")
     .required("You must accept the Terms of Use and Privacy Policy"),
+  // birthDate: Yup.date()
+  //   .required("Birth date is required")
+  //   .test("is-18", "You must be at least 18 years old", function (value) {
+  //     if (!value) return false;
+  //     const today = new Date();
+  //     const age = today.getFullYear() - value.getFullYear();
+  //     return (
+  //       age > 18 ||
+  //       (age === 18 &&
+  //         today >= new Date(value.setFullYear(value.getFullYear() + 18)))
+  //     );
+  //   }),
+  // gender: Yup.string().required("Gender is required"),
 });
 
 type SignUpSchemaType = Yup.InferType<typeof signUpSchema>;
 
 const SignUpWithLeftBackground = () => {
-  const { t } = useTranslation(); // Translation hook
+  const { t } = useTranslation();
+  const toast = useToast();
+
   const {
     control,
     handleSubmit,
-    reset,
+    setValue,
     formState: { errors },
   } = useForm<SignUpSchemaType>({
     resolver: yupResolver(signUpSchema),
   });
 
-  const toast = useToast();
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isMediumScreen] = useMediaQuery({ maxWidth: 768 });
 
-  // Toggles password visibility
-  const handleState = () => {
-    setShowPassword((prev) => !prev);
-  };
-
-  // Toggles confirm password visibility
-  const handleConfirmPwState = () => {
-    setShowConfirmPassword((prev) => !prev);
-  };
-
-  // Handles the submit when a key is pressed
-  const handleKeyPress = () => {
-    Keyboard.dismiss();
-    handleSubmit(onSubmit)();
-  };
-
-  // This function will be called when the form is submitted
   const onSubmit = async (data: SignUpSchemaType) => {
     try {
-      // Attempt login with credentials
       const response = await registerUser(
         data.username,
         data.email,
         data.password
       );
-
       if (response?.success) {
-        router.push({ pathname: `/auth/confirm-mail`, params: {email: data.email }});
+        router.push({
+          pathname: "/auth/confirm-mail",
+          params: { email: data.email },
+        });
       }
-    } catch (error) {
-      // Show error toast message if login fails
+    } catch {
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
@@ -134,19 +106,17 @@ const SignUpWithLeftBackground = () => {
     }
   };
 
-  // Media query to check if the screen width is small
-  const [isMediumScreen] = useMediaQuery({ maxWidth: 768 });
+  const handleKeyPress = () => {
+    Keyboard.dismiss();
+    handleSubmit(onSubmit)();
+  };
 
   return (
     <VStackContainer>
       {isMediumScreen && (
         <Pressable
           onPress={() => router.back()}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-          }}
+          style={{ position: "absolute", top: 0, left: 0 }}
         >
           <Icon
             as={ArrowLeftIcon}
@@ -155,209 +125,97 @@ const SignUpWithLeftBackground = () => {
           />
         </Pressable>
       )}
+
       <LoginTextsContainer>
         <Heading size="3xl">{t("Sign Up")}</Heading>
         <Text>{t("Sign up and start using Gluestack")}</Text>
       </LoginTextsContainer>
 
       <FormsContainer>
-        {/* Username input field */}
-        <FormControl isInvalid={!!errors.username}>
-          <FormControlLabel>
-            <FormControlLabelText>{t("Username")}</FormControlLabelText>
-          </FormControlLabel>
-          <Controller
-            name="username"
-            control={control}
-            defaultValue=""
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input>
-                <InputField
-                  className="text-sm"
-                  placeholder={t("Username")}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  onSubmitEditing={handleKeyPress}
-                  returnKeyType="done"
-                />
-              </Input>
-            )}
-          />
-          <FormControlError>
-            <FormControlErrorText>
-              {"* " + errors.username?.message}
-            </FormControlErrorText>
-          </FormControlError>
-        </FormControl>
-
-        {/* Email input field */}
-        <FormControl isInvalid={!!errors.email}>
-          <FormControlLabel>
-            <FormControlLabelText>{t("Email")}</FormControlLabelText>
-          </FormControlLabel>
-          <Controller
-            name="email"
-            control={control}
-            defaultValue=""
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input>
-                <InputField
-                  className="text-sm"
-                  placeholder={t("Email")}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  onSubmitEditing={handleKeyPress}
-                  returnKeyType="done"
-                />
-              </Input>
-            )}
-          />
-          <FormControlError>
-            <FormControlErrorText>
-              {"* " + errors.email?.message}
-            </FormControlErrorText>
-          </FormControlError>
-        </FormControl>
-
-        {/* Password input field */}
-        <FormControl isInvalid={!!errors.password}>
-          <FormControlLabel>
-            <FormControlLabelText>{t("Password")}</FormControlLabelText>
-          </FormControlLabel>
-          <Controller
-            name="password"
-            control={control}
-            defaultValue=""
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input>
-                <InputField
-                  className="text-sm"
-                  placeholder={t("Password")}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  onSubmitEditing={handleKeyPress}
-                  returnKeyType="done"
-                  type={showPassword ? "text" : "password"}
-                />
-                <InputSlot
-                  onPress={handleState}
-                  className="pr-3"
-                  style={{ paddingRight: 12 }}
-                >
-                  <InputIcon as={showPassword ? EyeIcon : EyeOffIcon} />
-                </InputSlot>
-              </Input>
-            )}
-          />
-          <FormControlError>
-            <FormControlErrorText>
-              {"* " + errors.password?.message}
-            </FormControlErrorText>
-          </FormControlError>
-        </FormControl>
-
-        {/* Confirm password input field */}
-        <FormControl isInvalid={!!errors.confirmpassword}>
-          <FormControlLabel>
-            <FormControlLabelText>{t("Confirm Password")}</FormControlLabelText>
-          </FormControlLabel>
-          <Controller
-            name="confirmpassword"
-            control={control}
-            defaultValue=""
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input>
-                <InputField
-                  placeholder={t("Confirm Password")}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  onSubmitEditing={handleKeyPress}
-                  returnKeyType="done"
-                  type={showConfirmPassword ? "text" : "password"}
-                />
-                <InputSlot
-                  onPress={handleConfirmPwState}
-                  className="pr-3"
-                  style={{ paddingRight: 12 }}
-                >
-                  <InputIcon as={showConfirmPassword ? EyeIcon : EyeOffIcon} />
-                </InputSlot>
-              </Input>
-            )}
-          />
-          <FormControlError>
-            <FormControlErrorText>
-              {"* " + errors.confirmpassword?.message}
-            </FormControlErrorText>
-          </FormControlError>
-        </FormControl>
-
-        {/* Checkbox to accept terms */}
-        <Controller
-          name="rememberme"
+        <GenericControlledInput
           control={control}
-          defaultValue={false}
-          render={({ field: { onChange, value } }) => (
-            <FormControl isInvalid={!!errors.rememberme}>
-              <Checkbox
-                size="sm"
-                isChecked={value}
-                onChange={onChange}
-                value={""}
-              >
-                <CheckboxIndicator>
-                  <CheckboxIcon as={CheckIcon} />
-                </CheckboxIndicator>
-                <CheckboxLabel>
-                  {t("I accept the Terms of Use and Privacy Policy")}
-                </CheckboxLabel>
-              </Checkbox>
-              {errors.rememberme && (
-                <FormControlError>
-                  <FormControlErrorText>
-                    {"* " + errors.rememberme?.message}
-                  </FormControlErrorText>
-                </FormControlError>
-              )}
-            </FormControl>
-          )}
+          name="username"
+          label={t("Username")}
+          placeholder={t("Username")}
+          error={errors.username?.message}
         />
 
-        {/* Action buttons */}
-        <ButtonsContainer>
-          <Button className="w-full" onPress={handleSubmit(onSubmit)}>
-            <ButtonText className="font-medium">{t("Sign Up")}</ButtonText>
-          </Button>
+        <GenericControlledInput
+          control={control}
+          name="email"
+          label={t("Email")}
+          placeholder={t("Email")}
+          error={errors.email?.message}
+        />
 
-          <Button variant="outline" className="w-full gap-1" onPress={() => {}}>
-            <ButtonText className="font-medium">
-              {t("Continue with Google")}
-            </ButtonText>
-            <ButtonIcon as={GoogleIcon} />
-          </Button>
+        <GenericControlledInput
+          control={control}
+          name="password"
+          label={t("Password")}
+          placeholder={t("Password")}
+          error={errors.password?.message}
+          isPasswordField
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+        />
+
+        <GenericControlledInput
+          control={control}
+          name="confirmpassword"
+          label={t("Confirm Password")}
+          placeholder={t("Confirm Password")}
+          error={errors.confirmpassword?.message}
+          isPasswordField
+          showPassword={showConfirmPassword}
+          setShowPassword={setShowConfirmPassword}
+        />
+
+        {/* <GenericDatePicker
+          control={control}
+          name="birthDate"
+          label={t("Birth Date")}
+          error={errors.birthDate?.message}
+        /> */}
+
+        {/* <GenericSelect
+          name="gender"
+          control={control}
+          setValue={setValue}
+          label={t("Select Gender")}
+          items={[
+            { label: t("Male"), value: "male" },
+            { label: t("Female"), value: "female" },
+            { label: t("Prefer not to say"), value: "prefer_not" },
+          ]}
+          error={errors.gender?.message}
+        /> */}
+
+        <GenericControlledCheckbox
+          control={control}
+          name="rememberme"
+          label={t("I accept the Terms of Use and Privacy Policy")}
+          error={errors.rememberme?.message}
+        />
+
+        <ButtonsContainer>
+          <GenericButton
+            label={t("Sign Up")}
+            onPress={handleSubmit(onSubmit)}
+          />
         </ButtonsContainer>
 
-        <SignUpContainer>
-          <Text size="md">{t("Already have an account?")}</Text>
-          <Link href="/auth/signin">
-            <LinkText className="font-medium text-primary-700">
-              {t("Sign In")}
-            </LinkText>
-          </Link>
-        </SignUpContainer>
+        <SignupPrompt
+          message={t("Already have an account?")}
+          actionText={t("Sign In")}
+          redirectTo="/auth/signin"
+        />
       </FormsContainer>
     </VStackContainer>
   );
 };
 
-export const SignUp = () => {
-  return (
-    <AuthLayout>
-      <SignUpWithLeftBackground />
-    </AuthLayout>
-  );
-};
+export const SignUp = () => (
+  <AuthLayout>
+    <SignUpWithLeftBackground />
+  </AuthLayout>
+);

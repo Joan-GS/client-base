@@ -66,3 +66,44 @@ export const handleRequest = async <T>(
     throw error;
   }
 };
+
+// apiUtils.ts
+export const handlePublicRequest = async <T>(
+  endpoint: string,
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  body?: object
+): Promise<T> => {
+  try {
+    const headers: Record<string, string> = {};
+
+    if (body) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const config: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body && method !== "GET") {
+      config.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+
+    if (response.status === 204) {
+      return undefined as unknown as T;
+    }
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    return responseData as T; // Note: Not using .data here since login returns token directly
+  } catch (error) {
+    console.error(`Public request failed to ${endpoint}:`, error);
+    throw error;
+  }
+};
