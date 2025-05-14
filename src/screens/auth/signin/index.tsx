@@ -26,7 +26,6 @@ import {
 import { Text } from "@/src/components/ui/text";
 import { Heading } from "@/src/components/ui/heading";
 
-
 // Validation schema
 const loginSchema = yup.object().shape({
   email: yup.string().email("Invalid email").required("Email is required"),
@@ -54,6 +53,7 @@ const LoginWithLeftBackground = () => {
       await loginUser(data.email, data.password);
 
       toast.show({
+        placement: "top",
         render: ({ id }) => (
           <Toast nativeID={id} action="success">
             <ToastTitle>{t("Login Successful")}</ToastTitle>
@@ -105,7 +105,10 @@ const LoginWithLeftBackground = () => {
             name="rememberme"
             label={t("Remember me")}
           />
-          <ForgotPasswordLink label={t("Forgot Password?")} />
+          <ForgotPasswordLink
+            label={t("Forgot Password?")}
+            redirectTo="/auth/forgot-password"
+          />
         </HStackContainer>
       </FormsContainer>
 

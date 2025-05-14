@@ -1,252 +1,166 @@
-// import { useState } from "react";
-// import { Toast, ToastTitle, useToast } from "@/components/ui/toast";
-// import { VStack } from "@/components/ui/vstack";
-// import { Heading } from "@/components/ui/heading";
-// import { Text } from "@/components/ui/text";
-// import {
-//   FormControl,
-//   FormControlError,
-//   FormControlErrorIcon,
-//   FormControlErrorText,
-//   FormControlLabel,
-//   FormControlLabelText,
-// } from "@/components/ui/form-control";
-// import { Input, InputField, InputIcon, InputSlot } from "@/components/ui/input";
-// import { ArrowLeftIcon, EyeIcon, EyeOffIcon, Icon } from "@/components/ui/icon";
-// import { Button, ButtonText } from "@/components/ui/button";
-// import { Keyboard } from "react-native";
-// import { useForm, Controller } from "react-hook-form";
-// import { z } from "zod";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { AlertTriangle } from "lucide-react-native";
-// import { Pressable } from "@/components/ui/pressable";
-// import useRouter from "@unitools/router";
-// import { AuthLayout } from "../layout";
+// src/screens/auth/ResetPasswordScreen.tsx
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as Yup from "yup";
+import { Keyboard } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { useToast, Toast, ToastTitle } from "@/src/components/ui/toast";
+import { AuthLayout } from "../layout";
+import { GenericButton, GenericControlledInput } from "@/src/shared";
+import { VStackContainer, FormsContainer, LoginTextsContainer } from "./styles";
+import { Text } from "@/src/components/ui/text";
+import { Heading } from "@/src/components/ui/heading";
+import { Pressable } from "@/src/components/ui/pressable";
+import { Icon } from "@/src/components/ui/icon";
+import { ArrowLeftIcon } from "@/src/components/ui/icon";
+import { useMediaQuery } from "@gluestack-style/react";
+import { submitNewPassword } from "./api/create-password";
+import { yupResolver } from "@hookform/resolvers/yup";
 
-// const createPasswordSchema = z.object({
-//   password: z
-//     .string()
-//     .min(6, "Must be at least 8 characters in length")
-//     .regex(new RegExp(".*[A-Z].*"), "One uppercase character")
-//     .regex(new RegExp(".*[a-z].*"), "One lowercase character")
-//     .regex(new RegExp(".*\\d.*"), "One number")
-//     .regex(
-//       new RegExp(".*[`~<>?,./!@#$%^&*()\\-_+=\"'|{}\\[\\];:\\\\].*"),
-//       "One special character"
-//     ),
-//   confirmpassword: z
-//     .string()
-//     .min(6, "Must be at least 8 characters in length")
-//     .regex(new RegExp(".*[A-Z].*"), "One uppercase character")
-//     .regex(new RegExp(".*[a-z].*"), "One lowercase character")
-//     .regex(new RegExp(".*\\d.*"), "One number")
-//     .regex(
-//       new RegExp(".*[`~<>?,./!@#$%^&*()\\-_+=\"'|{}\\[\\];:\\\\].*"),
-//       "One special character"
-//     ),
-// });
+const resetPasswordSchema = Yup.object().shape({
+  newPassword: Yup.string()
+    .min(6, "Password must be at least 6 characters")
+    .matches(/[A-Z]/, "Must contain at least one uppercase letter")
+    .matches(/[a-z]/, "Must contain at least one lowercase letter")
+    .matches(/\d/, "Must contain at least one number")
+    .matches(
+      /[!@#$%^&*(),.?":{}|<>]/,
+      "Must contain at least one special character"
+    )
+    .required("Password is required"),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref("newPassword")], "Passwords must match")
+    .required("Please confirm your password"),
+});
 
-// type CreatePasswordSchemaType = z.infer<typeof createPasswordSchema>;
+type ResetPasswordSchemaType = Yup.InferType<typeof resetPasswordSchema>;
 
-// const CreatePasswordWithLeftBackground = () => {
-//   const {
-//     control,
-//     handleSubmit,
-//     reset,
-//     formState: { errors },
-//   } = useForm<CreatePasswordSchemaType>({
-//     resolver: zodResolver(createPasswordSchema),
-//   });
-//   const toast = useToast();
+const ResetPasswordScreen = () => {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const router = useRouter();
+  const [isMediumScreen] = useMediaQuery({ maxWidth: 768 });
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { token } = useLocalSearchParams();
 
-//   const onSubmit = (data: CreatePasswordSchemaType) => {
-//     if (data.password === data.confirmpassword) {
-//       toast.show({
-//         placement: "bottom right",
-//         render: ({ id }) => {
-//           return (
-//             <Toast nativeID={id} variant="accent" action="success">
-//               <ToastTitle>Success</ToastTitle>
-//             </Toast>
-//           );
-//         },
-//       });
-//       reset();
-//     } else {
-//       toast.show({
-//         placement: "bottom right",
-//         render: ({ id }) => {
-//           return (
-//             <Toast nativeID={id} variant="accent" action="error">
-//               <ToastTitle>Passwords do not match</ToastTitle>
-//             </Toast>
-//           );
-//         },
-//       });
-//     }
-//   };
-//   const [showPassword, setShowPassword] = useState(false);
-//   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ResetPasswordSchemaType>({
+    resolver: yupResolver(resetPasswordSchema),
+    mode: "onChange",
+  });
 
-//   const handleState = () => {
-//     setShowPassword((showState) => {
-//       return !showState;
-//     });
-//   };
-//   const handleConfirmPwState = () => {
-//     setShowConfirmPassword((showState) => {
-//       return !showState;
-//     });
-//   };
-//   const handleKeyPress = () => {
-//     Keyboard.dismiss();
-//     handleSubmit(onSubmit)();
-//   };
-//   const router = useRouter();
-//   return (
-//     <VStack className="max-w-[440px] w-full" space="md">
-//       <VStack className="md:items-center" space="md">
-//         <Pressable
-//           onPress={() => {
-//             router.back();
-//           }}
-//         >
-//           <Icon
-//             as={ArrowLeftIcon}
-//             className="md:hidden stroke-background-800"
-//             size="xl"
-//           />
-//         </Pressable>
-//         <VStack>
-//           <Heading className="md:text-center" size="3xl">
-//             Create new password
-//           </Heading>
-//           <Text className="md:text-center">
-//             Your new password must be different from previously used passwords{" "}
-//           </Text>
-//         </VStack>
-//       </VStack>
-//       <VStack className="w-full">
-//         <VStack space="xl" className="w-full">
-//           <FormControl isInvalid={!!errors.password}>
-//             <FormControlLabel>
-//               <FormControlLabelText>Password</FormControlLabelText>
-//             </FormControlLabel>
-//             <Controller
-//               defaultValue=""
-//               name="password"
-//               control={control}
-//               rules={{
-//                 validate: async (value) => {
-//                   try {
-//                     await createPasswordSchema.parseAsync({
-//                       password: value,
-//                     });
-//                     return true;
-//                   } catch (error: any) {
-//                     return error.message;
-//                   }
-//                 },
-//               }}
-//               render={({ field: { onChange, onBlur, value } }) => (
-//                 <Input>
-//                   <InputField
-//                     className="text-sm"
-//                     placeholder="Password"
-//                     value={value}
-//                     onChangeText={onChange}
-//                     onBlur={onBlur}
-//                     onSubmitEditing={handleKeyPress}
-//                     returnKeyType="done"
-//                     type={showPassword ? "text" : "password"}
-//                   />
-//                   <InputSlot onPress={handleState} className="pr-3">
-//                     <InputIcon as={showPassword ? EyeIcon : EyeOffIcon} />
-//                   </InputSlot>
-//                 </Input>
-//               )}
-//             />
-//             <FormControlError>
-//               <FormControlErrorIcon size="sm" as={AlertTriangle} />
-//               <FormControlErrorText>
-//                 {errors?.password?.message}
-//               </FormControlErrorText>
-//             </FormControlError>
-//             <FormControlLabel>
-//               <FormControlLabelText className="text-typography-500">
-//                 Must be atleast 8 characters
-//               </FormControlLabelText>
-//             </FormControlLabel>
-//           </FormControl>
-//           <FormControl isInvalid={!!errors.confirmpassword}>
-//             <FormControlLabel>
-//               <FormControlLabelText>Confirm Password</FormControlLabelText>
-//             </FormControlLabel>
-//             <Controller
-//               defaultValue=""
-//               name="confirmpassword"
-//               control={control}
-//               rules={{
-//                 validate: async (value) => {
-//                   try {
-//                     await createPasswordSchema.parseAsync({
-//                       password: value,
-//                     });
-//                     return true;
-//                   } catch (error: any) {
-//                     return error.message;
-//                   }
-//                 },
-//               }}
-//               render={({ field: { onChange, onBlur, value } }) => (
-//                 <Input>
-//                   <InputField
-//                     placeholder="Confirm Password"
-//                     className="text-sm"
-//                     value={value}
-//                     onChangeText={onChange}
-//                     onBlur={onBlur}
-//                     onSubmitEditing={handleKeyPress}
-//                     returnKeyType="done"
-//                     type={showConfirmPassword ? "text" : "password"}
-//                   />
+  const onSubmit = async (data: ResetPasswordSchemaType) => {
+    if (!token || typeof token !== "string") {
+      toast.show({
+        placement: "bottom",
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error">
+            <ToastTitle>{t("Invalid reset link")}</ToastTitle>
+          </Toast>
+        ),
+      });
+      return;
+    }
 
-//                   <InputSlot onPress={handleConfirmPwState} className="pr-3">
-//                     <InputIcon
-//                       as={showConfirmPassword ? EyeIcon : EyeOffIcon}
-//                     />
-//                   </InputSlot>
-//                 </Input>
-//               )}
-//             />
-//             <FormControlError>
-//               <FormControlErrorIcon size="sm" as={AlertTriangle} />
-//               <FormControlErrorText>
-//                 {errors?.confirmpassword?.message}
-//               </FormControlErrorText>
-//             </FormControlError>
-//             <FormControlLabel>
-//               <FormControlLabelText className="text-typography-500">
-//                 Both passwords must match
-//               </FormControlLabelText>
-//             </FormControlLabel>
-//           </FormControl>
-//         </VStack>
+    setIsLoading(true);
+    try {
+      await submitNewPassword({
+        token,
+        newPassword: data.newPassword,
+      });
 
-//         <VStack className="mt-7 w-full">
-//           <Button className="w-full" onPress={handleSubmit(onSubmit)}>
-//             <ButtonText className="font-medium">Update Password</ButtonText>
-//           </Button>
-//         </VStack>
-//       </VStack>
-//     </VStack>
-//   );
-// };
+      toast.show({
+        placement: "bottom",
+        render: ({ id }) => (
 
-// export const CreatePassword = () => {
-//   return (
-//     <AuthLayout>
-//       <CreatePasswordWithLeftBackground />
-//     </AuthLayout>
-//   );
-// };
+          <Toast nativeID={id} action="success">
+            <ToastTitle>{t("Password reset successfully!")}</ToastTitle>
+          </Toast>
+        ),
+      });
+
+      // Redirect to login after successful reset
+      router.replace("/auth/signin");
+    } catch (error) {
+      toast.show({
+        placement: "bottom",
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error">
+            <ToastTitle>
+              {error instanceof Error ? error.message : "An error occurred"}
+            </ToastTitle>
+          </Toast>
+        ),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = () => {
+    Keyboard.dismiss();
+    handleSubmit(onSubmit)();
+  };
+
+  return (
+    <VStackContainer>
+      {isMediumScreen && (
+        <Pressable
+          onPress={() => router.back()}
+          style={{ position: "absolute", top: 0, left: 0 }}
+        >
+          <Icon
+            as={ArrowLeftIcon}
+            size="xl"
+            className="stroke-background-800"
+          />
+        </Pressable>
+      )}
+      <LoginTextsContainer>
+        <Heading size="3xl">{t("Reset Password")}</Heading>
+        <Text>{t("Create a new password for your account.")}</Text>
+      </LoginTextsContainer>
+
+      <FormsContainer>
+        <GenericControlledInput
+          control={control}
+          name="newPassword"
+          label={t("New Password")}
+          placeholder={t("Enter new password")}
+          secureTextEntry
+          error={errors.newPassword?.message}
+          onSubmitEditing={handleKeyPress}
+          isPasswordField
+        />
+
+        <GenericControlledInput
+          control={control}
+          name="confirmPassword"
+          label={t("Confirm Password")}
+          placeholder={t("Confirm new password")}
+          secureTextEntry
+          error={errors.confirmPassword?.message}
+          onSubmitEditing={handleKeyPress}
+          isPasswordField
+        />
+
+        <GenericButton
+          label={t("Reset Password")}
+          onPress={handleSubmit(onSubmit)}
+          isLoading={isLoading}
+        />
+      </FormsContainer>
+    </VStackContainer>
+  );
+};
+
+export const CreatePassword = () => (
+  <AuthLayout>
+    <ResetPasswordScreen />
+  </AuthLayout>
+);

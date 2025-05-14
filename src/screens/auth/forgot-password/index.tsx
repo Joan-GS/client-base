@@ -1,138 +1,118 @@
-// import { Toast, ToastTitle, useToast } from "@/components/ui/toast";
-// import { VStack } from "@/components/ui/vstack";
-// import { Heading } from "@/components/ui/heading";
-// import { Text } from "@/components/ui/text";
-// import {
-//   FormControl,
-//   FormControlError,
-//   FormControlErrorIcon,
-//   FormControlErrorText,
-//   FormControlLabel,
-//   FormControlLabelText,
-// } from "@/components/ui/form-control";
-// import { Input, InputField } from "@/components/ui/input";
-// import { ArrowLeftIcon, Icon } from "@/components/ui/icon";
-// import { Button, ButtonText } from "@/components/ui/button";
-// import { Keyboard } from "react-native";
-// import { useForm, Controller } from "react-hook-form";
-// import { z } from "zod";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import { AlertTriangle } from "lucide-react-native";
-// import useRouter from "@unitools/router";
-// import { Pressable } from "@/components/ui/pressable";
-// import { AuthLayout } from "../layout";
+// src/screens/auth/ForgotPasswordScreen.tsx
+import React from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { useToast, Toast, ToastTitle } from "@/src/components/ui/toast";
+import { AuthLayout } from "../layout";
+import { GenericButton, GenericControlledInput } from "@/src/shared";
+import { VStackContainer, FormsContainer, LoginTextsContainer } from "./styles";
+import { Text } from "@/src/components/ui/text";
+import { Heading } from "@/src/components/ui/heading";
+import { Pressable } from "@/src/components/ui/pressable";
+import { Icon } from "@/src/components/ui/icon";
+import { ArrowLeftIcon } from "@/src/components/ui/icon";
+import { useMediaQuery } from "@gluestack-style/react";
+import { requestPasswordReset } from "./api/forgot-password";
 
-// const forgotPasswordSchema = z.object({
-//   email: z.string().min(1, "Email is required").email(),
-// });
+const forgotPasswordSchema = yup.object().shape({
+  email: yup.string().email("Invalid email").required("Email is required"),
+});
 
-// type forgotPasswordSchemaType = z.infer<typeof forgotPasswordSchema>;
+type ForgotPasswordSchemaType = yup.InferType<typeof forgotPasswordSchema>;
 
-// const ForgotPasswordScreen = () => {
-//   const {
-//     control,
-//     handleSubmit,
-//     reset,
-//     formState: { errors },
-//   } = useForm<forgotPasswordSchemaType>({
-//     resolver: zodResolver(forgotPasswordSchema),
-//   });
-//   const toast = useToast();
+const ForgotPasswordScreen = () => {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const router = useRouter();
+  const [isMediumScreen] = useMediaQuery({ maxWidth: 768 });
+  const [isLoading, setIsLoading] = React.useState(false);
 
-//   const onSubmit = (_data: forgotPasswordSchemaType) => {
-//     toast.show({
-//       placement: "bottom right",
-//       render: ({ id }) => {
-//         return (
-//           <Toast nativeID={id} variant="accent" action="success">
-//             <ToastTitle>Link Sent Successfully</ToastTitle>
-//           </Toast>
-//         );
-//       },
-//     });
-//     reset();
-//   };
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ForgotPasswordSchemaType>({
+    resolver: yupResolver(forgotPasswordSchema),
+  });
 
-//   const handleKeyPress = () => {
-//     Keyboard.dismiss();
-//     handleSubmit(onSubmit)();
-//   };
-//   const router = useRouter();
-//   return (
-//    <VStack className="max-w-[440px] w-full" space="md">
-//       <VStack className="md:items-center" space="md">
-//         <Pressable
-//           onPress={() => {
-//             router.back();
-//           }}
-//         >
-//           <Icon
-//             as={ArrowLeftIcon}
-//             className="md:hidden stroke-background-800"
-//             size="xl"
-//           />
-//         </Pressable>
-//         <VStack>
-//           <Heading className="md:text-center" size="3xl">
-//             Forgot Password?
-//           </Heading>
-//           <Text className="text-sm">
-//             Enter email ID associated with your account.
-//           </Text>
-//         </VStack>
-//       </VStack>
+  const onSubmit = async (data: ForgotPasswordSchemaType) => {
+    setIsLoading(true);
+    try {
+      const response = await requestPasswordReset(data.email);
 
-//       <VStack space="xl" className="w-full ">
-//         <FormControl isInvalid={!!errors?.email} className="w-full">
-//           <FormControlLabel>
-//             <FormControlLabelText>Email</FormControlLabelText>
-//           </FormControlLabel>
-//           <Controller
-//             defaultValue=""
-//             name="email"
-//             control={control}
-//             rules={{
-//               validate: async (value) => {
-//                 try {
-//                   await forgotPasswordSchema.parseAsync({ email: value });
-//                   return true;
-//                 } catch (error: any) {
-//                   return error.message;
-//                 }
-//               },
-//             }}
-//             render={({ field: { onChange, onBlur, value } }) => (
-//               <Input>
-//                 <InputField
-//                   placeholder="Enter email"
-//                   value={value}
-//                   onChangeText={onChange}
-//                   onBlur={onBlur}
-//                   onSubmitEditing={handleKeyPress}
-//                   returnKeyType="done"
-//                 />
-//               </Input>
-//             )}
-//           />
-//           <FormControlError>
-//             <FormControlErrorIcon as={AlertTriangle} />
-//             <FormControlErrorText>
-//               {errors?.email?.message}
-//             </FormControlErrorText>
-//           </FormControlError>
-//         </FormControl>
-//         <Button className="w-full" onPress={handleSubmit(onSubmit)}>
-//           <ButtonText className="font-medium">Send Link</ButtonText>
-//         </Button>
-//       </VStack>
-//     </VStack>
-//   );
-// };
+      toast.show({
+        placement: "bottom",
+        render: ({ id }) => (
+          <Toast nativeID={id} action="success">
+            <ToastTitle>{response.message}</ToastTitle>
+          </Toast>
+        ),
+      });
 
-// export const ForgotPassword = () => {
-//   return (
-//     <AuthLayout>
-//       <ForgotPasswordScreen />
-//     </AuthLayout>
-//   );
-// };
+      router.back();
+    } catch (error) {
+      toast.show({
+        placement: "bottom",
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error">
+            <ToastTitle>
+              {error instanceof Error
+                ? error.message
+                : t("Failed to send reset link. Please try again.")}
+            </ToastTitle>
+          </Toast>
+        ),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <VStackContainer>
+      {isMediumScreen && (
+        <Pressable
+          onPress={() => router.back()}
+          style={{ position: "absolute", top: 0, left: 0 }}
+        >
+          <Icon
+            as={ArrowLeftIcon}
+            size="xl"
+            className="stroke-background-800"
+          />
+        </Pressable>
+      )}
+      <LoginTextsContainer>
+        <Heading size="3xl">{t("Forgot Password")}</Heading>
+        <Text>{t("Enter your email to receive a password reset link")}</Text>
+      </LoginTextsContainer>
+
+      <FormsContainer>
+        <GenericControlledInput
+          control={control}
+          name="email"
+          label={t("Email")}
+          placeholder={t("Enter your email")}
+          error={errors.email?.message}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+
+        <GenericButton
+          label={t("Send Reset Link")}
+          onPress={handleSubmit(onSubmit)}
+          isLoading={isLoading}
+        />
+      </FormsContainer>
+    </VStackContainer>
+  );
+};
+
+export const ForgotPassword = () => (
+  <AuthLayout>
+    <ForgotPasswordScreen />
+  </AuthLayout>
+);

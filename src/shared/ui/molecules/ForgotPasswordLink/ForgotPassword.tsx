@@ -1,16 +1,17 @@
-import { Link } from "@/src/components/ui/link";
+import { Pressable } from "@/src/components/ui/pressable";
+import { router } from "expo-router";
 import { ForgotPasswordText } from "./styles";
 
 type Props = {
   label: string;
-  href?: string;
+  redirectTo?: Parameters<typeof router.push>[0];
 };
 
 export const ForgotPasswordLink = ({
   label,
-  href = "/auth/forgot-password",
+  redirectTo = "/auth/forgot-password",
 }: Props) => (
-  <Link href={href}>
+  <Pressable onPress={() => router.push(redirectTo)}>
     <ForgotPasswordText>{label}</ForgotPasswordText>
-  </Link>
+  </Pressable>
 );
