@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+// screens/ProfileScreen.tsx
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, View, FlatList } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -7,46 +8,28 @@ import {
   Heart,
   LogOutIcon,
   MessageCircle,
-  ThumbsUp,
+  EditIcon,
 } from "lucide-react-native";
 import { useRecoilValue } from "recoil";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { User } from "@joan16/shared-base";
-import { Pressable } from "@gluestack-ui/themed";
 
 // Components
 import { Avatar } from "@/src/components/ui/avatar";
 import { Text } from "@/src/components/ui/text";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { DashboardLayout } from "../../dashboard/dashboard-layout";
-import { Button, ButtonIcon, ButtonText } from "@/src/components/ui/button";
-import { EditIcon, Icon } from "@/src/components/ui/icon";
-import { ModalHeader, ModalFooter } from "@/src/components/ui/modal";
 import { Input, InputField } from "@/src/components/ui/input";
 import GenericCard from "@/src/shared/ui/organism/Card/Card";
-
-// Styles
+import { Pressable } from "@/src/components/ui/pressable";
 import {
-  ProfileContainer,
+  GenericButton,
   ProfileHeader,
-  ProfileText,
-  StatsItem,
-  StatsSection,
-  ModalStyled,
-  ModalContentStyled,
-  ModalBodyStyled,
-  ModalAvatarStyled,
-  ModalAvatarPressableStyled,
-  LogoutButton,
-  MainContainer,
-  ContentContainer,
-  ClimbGridContainer,
-  ClimbGridContent,
-  ClimbCardWrapper,
-} from "./styles";
+  ProfileStats,
+  UserListItem,
+} from "@/src/shared";
+import { ConfirmationModal, GenericModal } from "@/src/shared/modals";
 
-// Assets & API
-import { EditPhotoIcon } from "./assets/icons/edit-photo";
+// API and state
 import { userState } from "@/src/recoil/users.recoil";
 import {
   fetchFollowers,
@@ -59,16 +42,27 @@ import {
 import { toggleLikeClimb } from "../../dashboard/dashboard-layout/api/climbs";
 
 // Types
-interface ProfileData {
+import { User } from "@joan16/shared-base";
+import {
+  ClimbGridContainer,
+  ContentContainer,
+  LogoutButton,
+  MainContainer,
+  ProfileContainer,
+} from "./styles";
+import { Button, ButtonIcon, ButtonText } from "@/src/components/ui/button";
+import { P } from "@expo/html-elements";
+
+export interface ProfileData {
   username: string;
-  following: any;
-  followers: any;
+  followers: any[];
+  following: any[];
   createdRoutes: number;
   completedRoutes: number;
   isFollowing?: boolean;
 }
 
-interface Climb {
+export interface Climb {
   id: string;
   title: string;
   grade: string;
@@ -79,7 +73,7 @@ interface Climb {
   imageUrl?: string;
 }
 
-interface FollowerFollowingItem {
+export interface FollowerFollowingItem {
   id: string;
   followerUser?: User;
   followingUser?: User;
@@ -88,8 +82,8 @@ interface FollowerFollowingItem {
 
 const initialProfileData: ProfileData = {
   username: "",
-  followers: 0,
-  following: 0,
+  followers: [],
+  following: [],
   createdRoutes: 0,
   completedRoutes: 0,
 };
@@ -124,8 +118,8 @@ const ProfileScreen = () => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
-  const [isUnfollowModalOpen, setIsUnfollowModalOpen] = useState(false);
   const [userToUnfollow, setUserToUnfollow] = useState<string | null>(null);
+  
 
   // Memoized values
   const targetUserId = useMemo(
@@ -133,13 +127,10 @@ const ProfileScreen = () => {
     [userId, currentUser?.id]
   );
   const username = profileData.username;
-  const followersCount = profileData.followers;
-  const followingCount = followingList?.length || 0;
-  const createdRoutesCount = climbs.length || 0;
+  const followersCount = profileData.followers.length;
+  const followingCount = profileData.following.length;
+  const createdRoutesCount = climbs.length;
   const completedRoutesCount = profileData.completedRoutes;
-
-  console.log("currentUser", currentUser);
-  console.log("targetUserId", targetUserId);
 
   /**
    * Initialize user profile data
@@ -164,14 +155,16 @@ const ProfileScreen = () => {
 
       setProfileData({
         username: userData.username || "",
-        followers: userData.followers?.data?.length || 0,
-        following: userData.following?.data?.length || 0,
+        followers: userData.followers?.data || [],
+        following: userData.following?.data || [],
         createdRoutes: userData.myClimbs?.data?.length || 0,
         completedRoutes: userData.ascensions?.length || 0,
         isFollowing: userData.isFollowing || false,
       });
 
       setClimbs(userData.myClimbs?.data || []);
+
+      console.log("Target:", targetUserId);
 
       // Load follow data if we have a target user ID
       if (targetUserId) {
@@ -191,7 +184,7 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     initializeProfile();
-  }, [targetUserId]);
+  }, []);
 
   /**
    * Toggle like status for a climb
@@ -237,6 +230,36 @@ const ProfileScreen = () => {
   );
 
   /**
+   * Render a climb item
+   */
+  const renderClimbItem = useCallback(
+    ({ item }: { item: Climb }) => (
+      <View style={{ width: "48%", marginBottom: 16 }}>
+        <GenericCard
+          title={item.title}
+          subtitle={`Grade: ${item.grade}`}
+          description={item.description || ""}
+          primaryActionCount={item.likesCount}
+          secondaryActionCount={item.commentsCount}
+          primaryIcon={Heart}
+          secondaryIcon={MessageCircle}
+          onPrimaryAction={() => handleToggleLike(item.id, item.isLiked)}
+          onSecondaryAction={() => console.log("Comment")}
+          isLiked={item.isLiked}
+          imageUrl={item.imageUrl || "https://placehold.co/600x400"}
+          onPress={() =>
+            router.navigate({
+              pathname: `/view-climb/view-climb`,
+              params: { climbId: item.id },
+            })
+          }
+        />
+      </View>
+    ),
+    [handleToggleLike]
+  );
+
+  /**
    * Save profile changes to the server
    */
   const saveProfileChanges = useCallback(async () => {
@@ -256,7 +279,7 @@ const ProfileScreen = () => {
         await initializeProfile(); // Refresh all data
       }
 
-      closeEditModal();
+      setIsEditModalOpen(false);
     } catch (error) {
       console.error("Error updating profile:", error);
     } finally {
@@ -276,24 +299,6 @@ const ProfileScreen = () => {
       console.error("Logout error:", error);
     }
   }, []);
-
-  // Modal handlers
-  const openEditModal = useCallback(() => setIsEditModalOpen(true), []);
-  const closeEditModal = useCallback(() => setIsEditModalOpen(false), []);
-  const openLogoutModal = useCallback(() => setIsLogoutModalOpen(true), []);
-  const closeLogoutModal = useCallback(() => setIsLogoutModalOpen(false), []);
-  const closeFollowersModal = useCallback(
-    () => setIsFollowersModalOpen(false),
-    []
-  );
-  const closeFollowingModal = useCallback(
-    () => setIsFollowingModalOpen(false),
-    []
-  );
-  const closeUnfollowModal = useCallback(
-    () => setIsUnfollowModalOpen(false),
-    []
-  );
 
   /**
    * Fetch and display followers list
@@ -332,37 +337,28 @@ const ProfileScreen = () => {
   }, [targetUserId]);
 
   /**
-   * Open unfollow confirmation modal
-   */
-  const openUnfollowModal = useCallback((userId: string) => {
-    setUserToUnfollow(userId);
-    setIsUnfollowModalOpen(true);
-  }, []);
-
-  /**
    * Follow a user
    */
-  const handleFollow = useCallback(async (targetUserId: string) => {
-    // Optimistic updates
-    updateFollowStatus(targetUserId, true);
-
+  const handleFollow = useCallback(async (userTarget: string) => {
     try {
-      await followUser(targetUserId);
-      // Refresh data
+      await followUser(userTarget);
+
       const [updatedFollowers, updatedFollowing] = await Promise.all([
-        fetchFollowers(targetUserId),
-        fetchFollowing(targetUserId),
+        fetchFollowers(targetUserId || ""),
+        fetchFollowing(targetUserId || ""),
       ]);
+
       setFollowersList(updatedFollowers);
       setFollowingList(updatedFollowing);
+
       setProfileData((prev) => ({
         ...prev,
-        followers: updatedFollowers?.length,
+        isFollowing: true,
+        followers: updatedFollowers,
+        following: updatedFollowing,
       }));
     } catch (error) {
       console.error("Error following user:", error);
-      // Revert on error
-      updateFollowStatus(targetUserId, false);
     }
   }, []);
 
@@ -373,179 +369,41 @@ const ProfileScreen = () => {
     if (!userToUnfollow) return;
 
     try {
-      // Optimistic update
-      updateFollowStatus(userToUnfollow, false);
-
       await unfollowUser(userToUnfollow);
 
-      // Refresh data
       const [updatedFollowers, updatedFollowing] = await Promise.all([
-        fetchFollowers(userToUnfollow),
-        fetchFollowing(userToUnfollow),
+        fetchFollowers(targetUserId || ""),
+        fetchFollowing(targetUserId || ""),
       ]);
+
       setFollowersList(updatedFollowers);
       setFollowingList(updatedFollowing);
+
       setProfileData((prev) => ({
         ...prev,
-        followers: updatedFollowers?.length,
+        isFollowing: false,
+        followers: updatedFollowers,
+        following: updatedFollowing,
       }));
     } catch (error) {
       console.error("Error unfollowing user:", error);
-      // Revert on error
-      updateFollowStatus(userToUnfollow, true);
     } finally {
-      closeUnfollowModal();
+      setUserToUnfollow(null);
     }
-  }, [userToUnfollow, closeUnfollowModal]);
-
-  /**
-   * Helper function to update follow status in state
-   */
-  const updateFollowStatus = useCallback(
-    (targetUserId: string, isFollowing: boolean) => {
-      // Update followers list - only if the current user is the one being followed/unfollowed
-      setFollowersList((prev) =>
-        prev.map((item) => {
-          // Only update if the current user is the one being followed/unfollowed
-          if (
-            item.followerUser?.id === currentUser?.id &&
-            item.followingUser?.id === targetUserId
-          ) {
-            return {
-              ...item,
-              isFollowing,
-            };
-          }
-          return item;
-        })
-      );
-
-      // Update following list - only if the current user is doing the following/unfollowing
-      setFollowingList((prev) =>
-        prev.map((item) => {
-          if (
-            item.followerUser?.id === currentUser?.id &&
-            item.followingUser?.id === targetUserId
-          ) {
-            return {
-              ...item,
-              isFollowing,
-            };
-          }
-          return item;
-        })
-      );
-
-      // Update main profile data if this is the viewed profile
-      if (userId === targetUserId) {
-        setProfileData((prev) => ({
-          ...prev,
-          isFollowing,
-          followers: isFollowing ? prev.followers + 1 : prev.followers - 1,
-        }));
-      }
-    },
-    [userId, currentUser?.id]
-  );
-
-  /**
-   * Render a user item in followers/following list
-   */
-  const renderUserItem = useCallback(
-    ({ item }: { item: FollowerFollowingItem }) => {
-      const user = item.followerUser || item.followingUser;
-      if (!user) return null;
-
-      const handlePressUser = () => {
-        router.push({
-          pathname: "/profile/profile",
-          params: { userId: user.id },
-        });
-        // Cierra el modal después de navegar
-        if (isFollowersModalOpen) setIsFollowersModalOpen(false);
-        if (isFollowingModalOpen) setIsFollowingModalOpen(false);
-      };
-
-      return (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingVertical: 12,
-          }}
-        >
-          <Pressable
-            style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
-            onPress={handlePressUser}
-          >
-            <View style={{ marginLeft: 12 }}>
-              <Text style={{ fontWeight: "600", fontSize: 16 }}>
-                {user.username}
-              </Text>
-            </View>
-          </Pressable>
-
-          {user.id !== currentUser?.id &&
-            (item.isFollowing ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onPress={() => {
-                  setUserToUnfollow(user.id);
-                  setIsUnfollowModalOpen(true);
-                }}
-              >
-                <ButtonText>Following</ButtonText>
-              </Button>
-            ) : (
-              <Button size="sm" onPress={() => handleFollow(user.id)}>
-                <ButtonText>Follow</ButtonText>
-              </Button>
-            ))}
-        </View>
-      );
-    },
-    [currentUser?.id, isFollowersModalOpen, isFollowingModalOpen]
-  );
-
-  /**
-   * Render a climb item
-   */
-  const renderClimbItem = useCallback(
-    ({ item }: { item: Climb }) => (
-      <ClimbCardWrapper key={item.id}>
-        <GenericCard
-          title={item.title}
-          subtitle={`Grade: ${item.grade}`}
-          description={item.description || ""}
-          primaryActionCount={item.likesCount}
-          secondaryActionCount={item.commentsCount}
-          primaryIcon={ThumbsUp}
-          secondaryIcon={MessageCircle}
-          onPrimaryAction={() => handleToggleLike(item.id, item.isLiked)}
-          onSecondaryAction={() => console.log("Comment")}
-          isLiked={item.isLiked}
-          imageUrl={item.imageUrl || "https://placehold.co/600x400"}
-          flex={1}
-          borderRadius={4}
-          maxWidth={540}
-        />
-      </ClimbCardWrapper>
-    ),
-    [handleToggleLike]
-  );
+  }, [userToUnfollow, targetUserId]);
 
   if (isLoading) {
     return (
-      <SafeAreaView className="h-full w-full flex items-center justify-center">
+      <SafeAreaView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
         <ActivityIndicator size="large" />
       </SafeAreaView>
     );
   }
 
   return (
-    <MainContainer>
+    <MainContainer style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ContentContainer>
           {!isCurrentUser && (
@@ -558,355 +416,190 @@ const ProfileScreen = () => {
           )}
 
           {isCurrentUser && (
-            <LogoutButton onPress={openLogoutModal}>
+            <LogoutButton onPress={() => setIsLogoutModalOpen(true)}>
               <ButtonIcon color="black" as={LogOutIcon} size="lg" />
             </LogoutButton>
           )}
 
           <ProfileContainer>
-            <ProfileHeader>
-              <Avatar size="2xl" />
-              <ProfileText>
-                <Text className="text-xl font-semibold">{username}</Text>
-              </ProfileText>
-            </ProfileHeader>
+            <ProfileHeader
+              username={username}
+              isCurrentUser={isCurrentUser}
+              onEditPress={() => setIsEditModalOpen(true)}
+              isFollowing={profileData.isFollowing}
+              onFollowPress={() =>
+                profileData.isFollowing
+                  ? setUserToUnfollow(userId || "")
+                  : handleFollow(userId || "")
+              }
+            />
 
-            <StatsSection>
-              <StatsItem onPress={openFollowersModal}>
-                <Text className="font-semibold text-lg">{followersCount}</Text>
-                <Text className="text-sm text-gray-500">{t("Followers")}</Text>
-              </StatsItem>
-              <StatsItem onPress={openFollowingModal}>
-                <Text className="font-semibold text-lg">{followingCount}</Text>
-                <Text className="text-sm text-gray-500">{t("Following")}</Text>
-              </StatsItem>
-              <StatsItem>
-                <Text className="font-semibold text-lg">
-                  {createdRoutesCount}
-                </Text>
-                <Text className="text-sm text-gray-500">{t("My Climbs")}</Text>
-              </StatsItem>
-              <StatsItem>
-                <Text className="font-semibold text-lg">
-                  {completedRoutesCount}
-                </Text>
-                <Text className="text-sm text-gray-500">{t("Climbs")}</Text>
-              </StatsItem>
-            </StatsSection>
-
-            {isCurrentUser ? (
-              <Button
-                variant="outline"
-                action="secondary"
-                onPress={openEditModal}
-                className="gap-3 relative"
-              >
-                <ButtonText className="text-dark">
-                  {t("Edit Profile")}
-                </ButtonText>
-                <ButtonIcon as={EditIcon} />
-              </Button>
-            ) : (
-              <Button
-                variant={profileData.isFollowing ? "outline" : "solid"}
-                onPress={() =>
-                  profileData.isFollowing
-                    ? openUnfollowModal(userId || "")
-                    : handleFollow(userId || "")
-                }
-              >
-                <Text
-                  className={
-                    profileData.isFollowing ? "text-black" : "text-white"
-                  }
-                >
-                  {profileData.isFollowing ? t("Following") : t("Follow")}
-                </Text>
-              </Button>
-            )}
+            <ProfileStats
+              followersCount={followersCount}
+              followingCount={followingCount}
+              createdRoutesCount={createdRoutesCount}
+              completedRoutesCount={completedRoutesCount}
+              onFollowersPress={openFollowersModal}
+              onFollowingPress={openFollowingModal}
+            />
           </ProfileContainer>
 
           <ClimbGridContainer>
-            <ClimbGridContent>
-              {climbs.map((climb) => (
-                <ClimbCardWrapper key={climb.id}>
-                  <GenericCard
-                    title={climb.title}
-                    subtitle={`Grade: ${climb.grade}`}
-                    description={climb.description || ""}
-                    primaryActionCount={climb.likesCount}
-                    secondaryActionCount={climb.commentsCount}
-                    primaryIcon={Heart}
-                    secondaryIcon={MessageCircle}
-                    onPrimaryAction={() =>
-                      handleToggleLike(climb.id, climb.isLiked)
-                    }
-                    onSecondaryAction={() => console.log("Comment")}
-                    isLiked={climb.isLiked}
-                    imageUrl={climb.imageUrl || "https://placehold.co/600x400"}
-                    flex={1}
-                    borderRadius={4}
-                    maxWidth={540}
-                    onPress={() =>
-                      router.navigate({
-                        pathname: `/view-climb/view-climb`,
-                        params: { climbId: climb.id },
-                      })
-                    }
-                  />
-                </ClimbCardWrapper>
-              ))}
-            </ClimbGridContent>
+            <FlatList
+              data={climbs}
+              renderItem={renderClimbItem}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              columnWrapperStyle={{ justifyContent: "space-between" }}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            />
           </ClimbGridContainer>
         </ContentContainer>
       </ScrollView>
 
       {/* Modals */}
-      {isCurrentUser && (
-        <LogoutModal
-          isOpen={isLogoutModalOpen}
-          onClose={closeLogoutModal}
-          onConfirm={logout}
-          t={t}
-        />
-      )}
-
-      {isCurrentUser && (
-        <EditProfileModal
-          isOpen={isEditModalOpen}
-          onClose={closeEditModal}
-          profileData={profileData}
-          setProfileData={setProfileData}
-          saveProfileChanges={saveProfileChanges}
-          isUpdating={isUpdating}
-          t={t}
-        />
-      )}
-
-      <FollowersFollowingModal
-        isOpen={isFollowersModalOpen}
-        onClose={closeFollowersModal}
-        title={t("Followers")}
-        data={followersList || []}
-        isLoading={isLoadingFollowers}
-        renderItem={renderUserItem}
-        t={t}
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={logout}
+        title={t("Confirm Logout")}
+        message={t("Are you sure you want to log out?")}
+        confirmText={t("Log Out")}
       />
 
-      <FollowersFollowingModal
-        isOpen={isFollowingModalOpen}
-        onClose={closeFollowingModal}
-        title={t("Following")}
-        data={followingList || []}
-        isLoading={isLoadingFollowing}
-        renderItem={renderUserItem}
-        t={t}
-      />
-
-      <UnfollowModal
-        isOpen={isUnfollowModalOpen}
-        onClose={closeUnfollowModal}
+      <ConfirmationModal
+        isOpen={!!userToUnfollow}
+        onClose={() => setUserToUnfollow(null)}
         onConfirm={confirmUnfollow}
-        t={t}
+        title={t("Confirm Unfollow")}
+        message={t("Are you sure you want to unfollow this user?")}
+        confirmText={t("Unfollow")}
       />
-    </MainContainer>
-  );
-};
 
-// Extracted Modal Components for better readability and reusability
+      <GenericModal
+        isOpen={isFollowersModalOpen}
+        onClose={() => setIsFollowersModalOpen(false)}
+        title={`${t("Followers")} (${followersList.length})`}
+      >
+        {isLoadingFollowers ? (
+          <ActivityIndicator size="large" />
+        ) : (
+          <FlatList
+            data={followersList}
+            renderItem={({ item }) => (
+              <UserListItem
+                user={item.followerUser || { id: "", username: "" }}
+                isFollowing={item.isFollowing}
+                currentUserId={currentUser?.id || undefined}
+                onPressUser={() => {
+                  router.push(
+                    `/profile/profile?userId=${item.followerUser?.id}`
+                  );
+                  setIsFollowersModalOpen(false);
+                }}
+                onFollowPress={() => handleFollow(item.followerUser?.id || "")}
+                onUnfollowPress={() =>
+                  setUserToUnfollow(item.followerUser?.id || null)
+                }
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            style={{ maxHeight: 400 }}
+          />
+        )}
+      </GenericModal>
 
-const LogoutModal = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  t: (key: string) => string;
-}) => (
-  <ModalStyled isOpen={isOpen} onClose={onClose} closeOnOverlayClick>
-    <ModalContentStyled>
-      <ModalHeader>
-        <Text className="text-lg font-semibold">{t("Confirm Logout")}</Text>
-      </ModalHeader>
-      <ModalBodyStyled>
-        <Text className="text-sm">
-          {t("Are you sure you want to log out?")}
-        </Text>
-      </ModalBodyStyled>
-      <ModalFooter>
-        <Button variant="outline" onPress={onClose}>
-          <ButtonText>{t("Cancel")}</ButtonText>
-        </Button>
-        <Button variant="solid" onPress={onConfirm} className="ml-2">
-          <ButtonText>{t("Log Out")}</ButtonText>
-        </Button>
-      </ModalFooter>
-    </ModalContentStyled>
-  </ModalStyled>
-);
+      <GenericModal
+        isOpen={isFollowingModalOpen}
+        onClose={() => setIsFollowingModalOpen(false)}
+        title={`${t("Following")} (${followingList.length})`}
+      >
+        {isLoadingFollowing ? (
+          <ActivityIndicator size="large" />
+        ) : (
+          <FlatList
+            data={followingList}
+            renderItem={({ item }) => (
+              <UserListItem
+                user={item.followingUser || { id: "", username: "" }}
+                isFollowing={item.isFollowing}
+                currentUserId={currentUser?.id || undefined}
+                onPressUser={() => {
+                  router.push(
+                    `/profile/profile?userId=${item.followingUser?.id}`
+                  );
+                  setIsFollowingModalOpen(false);
+                }}
+                onFollowPress={() => handleFollow(item.followingUser?.id || "")}
+                onUnfollowPress={() =>
+                  setUserToUnfollow(item.followingUser?.id || null)
+                }
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            style={{ maxHeight: 400 }}
+          />
+        )}
+      </GenericModal>
 
-const EditProfileModal = ({
-  isOpen,
-  onClose,
-  profileData,
-  setProfileData,
-  saveProfileChanges,
-  isUpdating,
-  t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  profileData: ProfileData;
-  setProfileData: React.Dispatch<React.SetStateAction<ProfileData>>;
-  saveProfileChanges: () => void;
-  isUpdating: boolean;
-  t: (key: string) => string;
-}) => (
-  <ModalStyled isOpen={isOpen} onClose={onClose} closeOnOverlayClick>
-    <ModalContentStyled>
-      <ModalHeader>
-        <Text>{t("Edit Profile")}</Text>
-      </ModalHeader>
-      <ModalBodyStyled>
-        <ModalAvatarStyled>
+      <GenericModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title={t("Edit Profile")}
+        footerContent={
+          <>
+            <Button
+              variant="solid"
+              onPress={saveProfileChanges}
+              disabled={isUpdating}
+              // icon={isUpdating ? ActivityIndicator : undefined}
+            >
+              <ButtonText>{t("Save")}</ButtonText>
+            </Button>
+          </>
+        }
+      >
+        <View style={{ alignItems: "center", marginBottom: 16 }}>
           <Avatar size="2xl" />
-          <ModalAvatarPressableStyled className="bg-background-500 rounded-full items-center justify-center h-8 w-8 right-6 top-44">
-            <Icon as={EditPhotoIcon} />
-          </ModalAvatarPressableStyled>
-        </ModalAvatarStyled>
+          <Pressable
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              backgroundColor: "white",
+              borderRadius: 20,
+              padding: 8,
+            }}
+          >
+            <EditIcon size={20} color="black" />
+          </Pressable>
+        </View>
 
-        <Text className="text-sm font-semibold mt-2">{t("Username")}</Text>
+        <Text style={{ fontWeight: "600", marginBottom: 8 }}>
+          {t("Username")}
+        </Text>
         <Input>
           <InputField
             value={profileData.username}
             onChangeText={(text) =>
               setProfileData({ ...profileData, username: text })
             }
-            placeholder="Enter your username"
+            placeholder={t("Enter your username")}
           />
         </Input>
-      </ModalBodyStyled>
-
-      <ModalFooter>
-        <Button variant="outline" onPress={onClose}>
-          <ButtonText>{t("Cancel")}</ButtonText>
-        </Button>
-        <Button
-          variant="solid"
-          onPress={saveProfileChanges}
-          className="ml-2"
-          disabled={isUpdating}
-        >
-          {isUpdating ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <ButtonText>{t("Save")}</ButtonText>
-          )}
-        </Button>
-      </ModalFooter>
-    </ModalContentStyled>
-  </ModalStyled>
-);
-
-const FollowersFollowingModal = ({
-  isOpen,
-  onClose,
-  title,
-  data,
-  isLoading,
-  renderItem,
-  t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  data: FollowerFollowingItem[] | null;
-  isLoading: boolean;
-  renderItem: ({ item }: { item: FollowerFollowingItem }) => JSX.Element | null;
-  t: (key: string) => string;
-}) => (
-  <ModalStyled isOpen={isOpen} onClose={onClose} closeOnOverlayClick>
-    <ModalContentStyled>
-      <ModalHeader>
-        <Text className="text-lg font-semibold">
-          {title} ({data ? data.length : 0})
-        </Text>
-      </ModalHeader>
-      <ModalBodyStyled>
-        {isLoading ? (
-          <ActivityIndicator size="large" />
-        ) : (
-          <>
-            {!data || data.length === 0 ? (
-              <View className="flex-1 items-center justify-center p-4">
-                <Text className="text-sm text-gray-500">
-                  {title === t("Followers")
-                    ? t("No followers yet")
-                    : t("Not following anyone yet")}
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={data}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id}
-                style={{ maxHeight: 400 }}
-              />
-            )}
-          </>
-        )}
-      </ModalBodyStyled>
-      <ModalFooter>
-        <Button variant="outline" onPress={onClose}>
-          <ButtonText>{t("Close")}</ButtonText>
-        </Button>
-      </ModalFooter>
-    </ModalContentStyled>
-  </ModalStyled>
-);
-
-const UnfollowModal = ({
-  isOpen,
-  onClose,
-  onConfirm,
-  t,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  t: (key: string) => string;
-}) => (
-  <ModalStyled isOpen={isOpen} onClose={onClose} closeOnOverlayClick>
-    <ModalContentStyled>
-      <ModalHeader>
-        <Text className="text-lg font-semibold">{t("Confirm Unfollow")}</Text>
-      </ModalHeader>
-      <ModalBodyStyled>
-        <Text className="text-sm">
-          {t("Are you sure you want to unfollow this user?")}
-        </Text>
-      </ModalBodyStyled>
-      <ModalFooter>
-        <Button variant="outline" onPress={onClose}>
-          <ButtonText>{t("Cancel")}</ButtonText>
-        </Button>
-        <Button variant="solid" onPress={onConfirm} className="ml-2">
-          <ButtonText>{t("Unfollow")}</ButtonText>
-        </Button>
-      </ModalFooter>
-    </ModalContentStyled>
-  </ModalStyled>
-);
+      </GenericModal>
+    </MainContainer>
+  );
+};
 
 export const Profile = () => {
   return (
-    <SafeAreaView className="h-full w-full">
+    <SafeAreaView style={{ flex: 1 }}>
       <DashboardLayout title="Profile" isSidebarVisible isHeaderVisible={false}>
         <ProfileScreen />
       </DashboardLayout>
     </SafeAreaView>
   );
 };
+
+
