@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getAuthToken, handleRequest } from "@/src/utils/api/https.utils";
 import { useSetRecoilState } from "recoil";
 import { userState } from "@/src/recoil/users.recoil";
-import { User } from "@joan16/shared-base";
+import { Climb, User } from "@joan16/shared-base";
 
 export interface UserProfileData {
   id: string;
@@ -23,6 +23,10 @@ export interface UserProfileData {
       imageUrl?: string;
     }[];
   };
+}
+
+export interface ClimbWithAscension extends Climb {
+  isAscended: boolean;
 }
 
 /**
@@ -55,6 +59,23 @@ export const fetchUserProfile = async (userId?: string): Promise<UserProfileData
   }
 };
 
+
+
+/**
+ * Fetch list of ascended climbs for a specific user.
+ */
+export const fetchAscended = async (userId: string): Promise<ClimbWithAscension[]> => {
+  try {
+    const response = await handleRequest<{ data: ClimbWithAscension[] }>(
+      `/interactions/${userId}/ascensions`,
+      "GET"
+    );
+    return response.data || [];
+  } catch (error) {
+    console.error("Error fetching ascended climbs:", error);
+    throw error;
+  }
+};
 
 
 /**

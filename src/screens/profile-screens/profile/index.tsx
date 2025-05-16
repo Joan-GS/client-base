@@ -24,9 +24,7 @@ import { Pressable } from "@/src/components/ui/pressable";
 import {
   GenericButton,
   ProfileHeader,
-  
   ProfileStats,
-  
   UserListItem,
 } from "@/src/shared";
 import { ConfirmationModal, GenericModal } from "@/src/shared/modals";
@@ -40,6 +38,7 @@ import {
   unfollowUser,
   useProfile,
   fetchUserProfile,
+  fetchAscended,
 } from "./api/profile";
 import { toggleLikeClimb } from "../../dashboard/dashboard-layout/api/climbs";
 import { handleRequest } from "@/src/utils/api/https.utils";
@@ -102,11 +101,16 @@ const ProfileScreen = () => {
   const { loadUserProfile, updateUserProfile } = useProfile();
 
   // State management
-  const [profileData, setProfileData] = useState<ProfileData>(initialProfileData);
+  const [profileData, setProfileData] =
+    useState<ProfileData>(initialProfileData);
   const [climbs, setClimbs] = useState<Climb[]>([]);
-  const [ascendedClimbs, setAscendedClimbs] = useState<ClimbWithAscension[]>([]);
-  const [followersList, setFollowersList] = useState<FollowerFollowingItem[]>([]);
-  const [followingList, setFollowingList] = useState<FollowerFollowingItem[]>([]);
+  const [ascendedClimbs, setAscendedClimbs] = useState<any[]>([]);
+  const [followersList, setFollowersList] = useState<FollowerFollowingItem[]>(
+    []
+  );
+  const [followingList, setFollowingList] = useState<FollowerFollowingItem[]>(
+    []
+  );
   const [isCurrentUser, setIsCurrentUser] = useState(false);
 
   // Loading states
@@ -122,7 +126,8 @@ const ProfileScreen = () => {
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
   const [isMyClimbsModalOpen, setIsMyClimbsModalOpen] = useState(false);
-  const [isAscendedClimbsModalOpen, setIsAscendedClimbsModalOpen] = useState(false);
+  const [isAscendedClimbsModalOpen, setIsAscendedClimbsModalOpen] =
+    useState(false);
   const [userToUnfollow, setUserToUnfollow] = useState<string | null>(null);
 
   // Memoized values
@@ -134,7 +139,7 @@ const ProfileScreen = () => {
   const followersCount = profileData.followers.length;
   const followingCount = profileData.following.length;
   const createdRoutesCount = climbs.length;
-  const completedRoutesCount = profileData.completedRoutes;
+  const completedRoutesCount = ascendedClimbs.length;
 
   /**
    * Initialize user profile data
@@ -156,13 +161,14 @@ const ProfileScreen = () => {
         // Load another user's profile
         userData = await fetchUserProfile(userId);
       }
+      fetchAscendedClimbs();
 
       setProfileData({
         username: userData.username || "",
         followers: userData.followers?.data || [],
         following: userData.following?.data || [],
         createdRoutes: userData.myClimbs?.data?.length || 0,
-        completedRoutes: userData.ascensions?.length || 0,
+        completedRoutes: ascendedClimbs.length || 0,
         isFollowing: userData.isFollowing || false,
       });
 
@@ -194,14 +200,16 @@ const ProfileScreen = () => {
   const fetchAscendedClimbs = useCallback(async () => {
     try {
       setIsLoadingAscendedClimbs(true);
-      const response = await handleRequest<any>(`/climbs/ascended`, "GET");
-      setAscendedClimbs(response.data || []);
+      if (!targetUserId) return;
+
+      const climbs = await fetchAscended(targetUserId);
+      setAscendedClimbs(climbs);
     } catch (error) {
       console.error("Error fetching ascended climbs:", error);
     } finally {
       setIsLoadingAscendedClimbs(false);
     }
-  }, []);
+  }, [targetUserId]);
 
   /**
    * Toggle like status for a climb
@@ -378,34 +386,41 @@ const ProfileScreen = () => {
   /**
    * Follow a user
    */
-  const handleFollow = useCallback(async (userTarget: string) => {
-    try {
-      await followUser(userTarget);
+  const handleFollow = useCallback(
+    async (userTarget: string) => {
+      try {
+        await followUser(userTarget);
 
-      // Update the specific user's follow status in followers/following lists
-      setFollowersList(prev => prev.map(user => 
-        user.followerUser?.id === userTarget 
-          ? { ...user, isFollowing: true } 
-          : user
-      ));
-      
-      setFollowingList(prev => prev.map(user => 
-        user.followingUser?.id === userTarget 
-          ? { ...user, isFollowing: true } 
-          : user
-      ));
+        // Update the specific user's follow status in followers/following lists
+        setFollowersList((prev) =>
+          prev.map((user) =>
+            user.followerUser?.id === userTarget
+              ? { ...user, isFollowing: true }
+              : user
+          )
+        );
 
-      // If we're on another user's profile, update their follow status
-      if (!isCurrentUser && targetUserId === userTarget) {
-        setProfileData(prev => ({
-          ...prev,
-          isFollowing: true
-        }));
+        setFollowingList((prev) =>
+          prev.map((user) =>
+            user.followingUser?.id === userTarget
+              ? { ...user, isFollowing: true }
+              : user
+          )
+        );
+
+        // If we're on another user's profile, update their follow status
+        if (!isCurrentUser && targetUserId === userTarget) {
+          setProfileData((prev) => ({
+            ...prev,
+            isFollowing: true,
+          }));
+        }
+      } catch (error) {
+        console.error("Error following user:", error);
       }
-    } catch (error) {
-      console.error("Error following user:", error);
-    }
-  }, [isCurrentUser, targetUserId]);
+    },
+    [isCurrentUser, targetUserId]
+  );
 
   /**
    * Unfollow a user after confirmation
@@ -417,23 +432,27 @@ const ProfileScreen = () => {
       await unfollowUser(userToUnfollow);
 
       // Update the specific user's follow status in followers/following lists
-      setFollowersList(prev => prev.map(user => 
-        user.followerUser?.id === userToUnfollow 
-          ? { ...user, isFollowing: false } 
-          : user
-      ));
-      
-      setFollowingList(prev => prev.map(user => 
-        user.followingUser?.id === userToUnfollow 
-          ? { ...user, isFollowing: false } 
-          : user
-      ));
+      setFollowersList((prev) =>
+        prev.map((user) =>
+          user.followerUser?.id === userToUnfollow
+            ? { ...user, isFollowing: false }
+            : user
+        )
+      );
+
+      setFollowingList((prev) =>
+        prev.map((user) =>
+          user.followingUser?.id === userToUnfollow
+            ? { ...user, isFollowing: false }
+            : user
+        )
+      );
 
       // If we're on another user's profile, update their follow status
       if (!isCurrentUser && targetUserId === userToUnfollow) {
-        setProfileData(prev => ({
+        setProfileData((prev) => ({
           ...prev,
-          isFollowing: false
+          isFollowing: false,
         }));
       }
     } catch (error) {
@@ -606,12 +625,16 @@ const ProfileScreen = () => {
         <FlatList
           data={climbs}
           renderItem={({ item }) => (
-            <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
-              <Text style={{ fontWeight: 'bold' }}>{item.title}</Text>
+            <View
+              style={{
+                padding: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: "#eee",
+              }}
+            >
+              <Text style={{ fontWeight: "bold" }}>{item.title}</Text>
               <Text>Grade: {item.grade}</Text>
-              <Text>Likes: {item.likesCount}</Text>
-              <Text>Comments: {item.commentsCount}</Text>
-              <Button 
+              <Button
                 onPress={() => {
                   router.navigate({
                     pathname: `/view-climb/view-climb`,
@@ -641,16 +664,27 @@ const ProfileScreen = () => {
           <FlatList
             data={ascendedClimbs}
             renderItem={({ item }) => (
-              <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
-                <Text style={{ fontWeight: 'bold' }}>{item.title}</Text>
-                <Text>Grade: {item.grade}</Text>
-                <Text>Likes: {item.likesCount}</Text>
-                <Text>Comments: {item.commentsCount}</Text>
-                <Button 
+              <View
+                style={{
+                  padding: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#eee",
+                }}
+              >
+                <Text style={{ fontWeight: "bold" }}>{item.climb.title}</Text>
+                <Text>Grade: {item.climb.grade}</Text>
+                {item.ascendedAt && (
+                  <Text>
+                    Ascended on:{" "}
+                    {new Date(item.ascendedAt).toLocaleDateString()}
+                  </Text>
+                )}
+                {item.ascentNotes && <Text>Notes: {item.ascentNotes}</Text>}
+                <Button
                   onPress={() => {
                     router.navigate({
                       pathname: `/view-climb/view-climb`,
-                      params: { climbId: item.id },
+                      params: { climbId: item.climb.id },
                     });
                     setIsAscendedClimbsModalOpen(false);
                   }}
