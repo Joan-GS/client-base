@@ -24,6 +24,8 @@ type ProfileStatsProps = {
   completedRoutesCount: number;
   onFollowersPress?: () => void;
   onFollowingPress?: () => void;
+  onCreatedRoutesPress: () => void;
+  onCompletedRoutesPress: () => void;
 };
 
 export const ProfileStats = ({
@@ -33,6 +35,8 @@ export const ProfileStats = ({
   completedRoutesCount,
   onFollowersPress,
   onFollowingPress,
+  onCreatedRoutesPress,
+  onCompletedRoutesPress,
 }: ProfileStatsProps) => {
   return (
     <View
@@ -55,10 +59,18 @@ export const ProfileStats = ({
       />
       <Divider orientation="vertical" />
 
-      <StatsItem value={createdRoutesCount} label="My Climbs" />
+      <StatsItem
+        value={createdRoutesCount}
+        label="My Climbs"
+        onPress={onCreatedRoutesPress}
+      />
       <Divider orientation="vertical" />
 
-      <StatsItem value={completedRoutesCount} label="Climbs" />
+      <StatsItem
+        value={completedRoutesCount}
+        label="Climbs"
+        onPress={onCompletedRoutesPress}
+      />
     </View>
   );
 };

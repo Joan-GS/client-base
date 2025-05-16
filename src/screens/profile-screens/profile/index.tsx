@@ -24,7 +24,9 @@ import { Pressable } from "@/src/components/ui/pressable";
 import {
   GenericButton,
   ProfileHeader,
+  
   ProfileStats,
+  
   UserListItem,
 } from "@/src/shared";
 import { ConfirmationModal, GenericModal } from "@/src/shared/modals";
@@ -40,6 +42,7 @@ import {
   fetchUserProfile,
 } from "./api/profile";
 import { toggleLikeClimb } from "../../dashboard/dashboard-layout/api/climbs";
+import { handleRequest } from "@/src/utils/api/https.utils";
 
 // Types
 import { User } from "@joan16/shared-base";
@@ -51,7 +54,6 @@ import {
   ProfileContainer,
 } from "./styles";
 import { Button, ButtonIcon, ButtonText } from "@/src/components/ui/button";
-import { P } from "@expo/html-elements";
 
 export interface ProfileData {
   username: string;
@@ -71,6 +73,10 @@ export interface Climb {
   commentsCount: number;
   isLiked: boolean;
   imageUrl?: string;
+}
+
+export interface ClimbWithAscension extends Climb {
+  isAscended: boolean;
 }
 
 export interface FollowerFollowingItem {
@@ -96,15 +102,11 @@ const ProfileScreen = () => {
   const { loadUserProfile, updateUserProfile } = useProfile();
 
   // State management
-  const [profileData, setProfileData] =
-    useState<ProfileData>(initialProfileData);
+  const [profileData, setProfileData] = useState<ProfileData>(initialProfileData);
   const [climbs, setClimbs] = useState<Climb[]>([]);
-  const [followersList, setFollowersList] = useState<FollowerFollowingItem[]>(
-    []
-  );
-  const [followingList, setFollowingList] = useState<FollowerFollowingItem[]>(
-    []
-  );
+  const [ascendedClimbs, setAscendedClimbs] = useState<ClimbWithAscension[]>([]);
+  const [followersList, setFollowersList] = useState<FollowerFollowingItem[]>([]);
+  const [followingList, setFollowingList] = useState<FollowerFollowingItem[]>([]);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
 
   // Loading states
@@ -112,14 +114,16 @@ const ProfileScreen = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
   const [isLoadingFollowing, setIsLoadingFollowing] = useState(false);
+  const [isLoadingAscendedClimbs, setIsLoadingAscendedClimbs] = useState(false);
 
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
+  const [isMyClimbsModalOpen, setIsMyClimbsModalOpen] = useState(false);
+  const [isAscendedClimbsModalOpen, setIsAscendedClimbsModalOpen] = useState(false);
   const [userToUnfollow, setUserToUnfollow] = useState<string | null>(null);
-  
 
   // Memoized values
   const targetUserId = useMemo(
@@ -164,8 +168,6 @@ const ProfileScreen = () => {
 
       setClimbs(userData.myClimbs?.data || []);
 
-      console.log("Target:", targetUserId);
-
       // Load follow data if we have a target user ID
       if (targetUserId) {
         const [followers, following] = await Promise.all([
@@ -184,6 +186,21 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     initializeProfile();
+  }, []);
+
+  /**
+   * Fetch ascended climbs
+   */
+  const fetchAscendedClimbs = useCallback(async () => {
+    try {
+      setIsLoadingAscendedClimbs(true);
+      const response = await handleRequest<any>(`/climbs/ascended`, "GET");
+      setAscendedClimbs(response.data || []);
+    } catch (error) {
+      console.error("Error fetching ascended climbs:", error);
+    } finally {
+      setIsLoadingAscendedClimbs(false);
+    }
   }, []);
 
   /**
@@ -336,73 +353,95 @@ const ProfileScreen = () => {
     }
   }, [targetUserId]);
 
- /**
- * Follow a user
- */
-const handleFollow = useCallback(async (userTarget: string) => {
-  try {
-    await followUser(userTarget);
+  /**
+   * Open my climbs modal
+   */
+  const openMyClimbsModal = useCallback(() => {
+    setIsMyClimbsModalOpen(true);
+  }, []);
 
-    // Update the specific user's follow status in followers/following lists
-    setFollowersList(prev => prev.map(user => 
-      user.followerUser?.id === userTarget 
-        ? { ...user, isFollowing: true } 
-        : user
-    ));
-    
-    setFollowingList(prev => prev.map(user => 
-      user.followingUser?.id === userTarget 
-        ? { ...user, isFollowing: true } 
-        : user
-    ));
-
-    // If we're on another user's profile, update their follow status
-    if (!isCurrentUser && targetUserId === userTarget) {
-      setProfileData(prev => ({
-        ...prev,
-        isFollowing: true
-      }));
+  /**
+   * Open ascended climbs modal
+   */
+  const openAscendedClimbsModal = useCallback(async () => {
+    try {
+      setIsLoadingAscendedClimbs(true);
+      setIsAscendedClimbsModalOpen(true);
+      await fetchAscendedClimbs();
+    } catch (error) {
+      console.error("Error opening ascended climbs modal:", error);
+    } finally {
+      setIsLoadingAscendedClimbs(false);
     }
-  } catch (error) {
-    console.error("Error following user:", error);
-  }
-}, [isCurrentUser, targetUserId]);
+  }, [fetchAscendedClimbs]);
 
-/**
- * Unfollow a user after confirmation
- */
-const confirmUnfollow = useCallback(async () => {
-  if (!userToUnfollow) return;
+  /**
+   * Follow a user
+   */
+  const handleFollow = useCallback(async (userTarget: string) => {
+    try {
+      await followUser(userTarget);
 
-  try {
-    await unfollowUser(userToUnfollow);
+      // Update the specific user's follow status in followers/following lists
+      setFollowersList(prev => prev.map(user => 
+        user.followerUser?.id === userTarget 
+          ? { ...user, isFollowing: true } 
+          : user
+      ));
+      
+      setFollowingList(prev => prev.map(user => 
+        user.followingUser?.id === userTarget 
+          ? { ...user, isFollowing: true } 
+          : user
+      ));
 
-    // Update the specific user's follow status in followers/following lists
-    setFollowersList(prev => prev.map(user => 
-      user.followerUser?.id === userToUnfollow 
-        ? { ...user, isFollowing: false } 
-        : user
-    ));
-    
-    setFollowingList(prev => prev.map(user => 
-      user.followingUser?.id === userToUnfollow 
-        ? { ...user, isFollowing: false } 
-        : user
-    ));
-
-    // If we're on another user's profile, update their follow status
-    if (!isCurrentUser && targetUserId === userToUnfollow) {
-      setProfileData(prev => ({
-        ...prev,
-        isFollowing: false
-      }));
+      // If we're on another user's profile, update their follow status
+      if (!isCurrentUser && targetUserId === userTarget) {
+        setProfileData(prev => ({
+          ...prev,
+          isFollowing: true
+        }));
+      }
+    } catch (error) {
+      console.error("Error following user:", error);
     }
-  } catch (error) {
-    console.error("Error unfollowing user:", error);
-  } finally {
-    setUserToUnfollow(null);
-  }
-}, [userToUnfollow, isCurrentUser, targetUserId]);
+  }, [isCurrentUser, targetUserId]);
+
+  /**
+   * Unfollow a user after confirmation
+   */
+  const confirmUnfollow = useCallback(async () => {
+    if (!userToUnfollow) return;
+
+    try {
+      await unfollowUser(userToUnfollow);
+
+      // Update the specific user's follow status in followers/following lists
+      setFollowersList(prev => prev.map(user => 
+        user.followerUser?.id === userToUnfollow 
+          ? { ...user, isFollowing: false } 
+          : user
+      ));
+      
+      setFollowingList(prev => prev.map(user => 
+        user.followingUser?.id === userToUnfollow 
+          ? { ...user, isFollowing: false } 
+          : user
+      ));
+
+      // If we're on another user's profile, update their follow status
+      if (!isCurrentUser && targetUserId === userToUnfollow) {
+        setProfileData(prev => ({
+          ...prev,
+          isFollowing: false
+        }));
+      }
+    } catch (error) {
+      console.error("Error unfollowing user:", error);
+    } finally {
+      setUserToUnfollow(null);
+    }
+  }, [userToUnfollow, isCurrentUser, targetUserId]);
 
   if (isLoading) {
     return (
@@ -453,6 +492,8 @@ const confirmUnfollow = useCallback(async () => {
               completedRoutesCount={completedRoutesCount}
               onFollowersPress={openFollowersModal}
               onFollowingPress={openFollowingModal}
+              onCreatedRoutesPress={openMyClimbsModal}
+              onCompletedRoutesPress={openAscendedClimbsModal}
             />
           </ProfileContainer>
 
@@ -488,6 +529,7 @@ const confirmUnfollow = useCallback(async () => {
         confirmText={t("Unfollow")}
       />
 
+      {/* Followers Modal */}
       <GenericModal
         isOpen={isFollowersModalOpen}
         onClose={() => setIsFollowersModalOpen(false)}
@@ -521,6 +563,7 @@ const confirmUnfollow = useCallback(async () => {
         )}
       </GenericModal>
 
+      {/* Following Modal */}
       <GenericModal
         isOpen={isFollowingModalOpen}
         onClose={() => setIsFollowingModalOpen(false)}
@@ -554,6 +597,75 @@ const confirmUnfollow = useCallback(async () => {
         )}
       </GenericModal>
 
+      {/* My Climbs Modal */}
+      <GenericModal
+        isOpen={isMyClimbsModalOpen}
+        onClose={() => setIsMyClimbsModalOpen(false)}
+        title={`${t("My Climbs")} (${climbs.length})`}
+      >
+        <FlatList
+          data={climbs}
+          renderItem={({ item }) => (
+            <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+              <Text style={{ fontWeight: 'bold' }}>{item.title}</Text>
+              <Text>Grade: {item.grade}</Text>
+              <Text>Likes: {item.likesCount}</Text>
+              <Text>Comments: {item.commentsCount}</Text>
+              <Button 
+                onPress={() => {
+                  router.navigate({
+                    pathname: `/view-climb/view-climb`,
+                    params: { climbId: item.id },
+                  });
+                  setIsMyClimbsModalOpen(false);
+                }}
+              >
+                <ButtonText>{t("View Details")}</ButtonText>
+              </Button>
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+          style={{ maxHeight: 400 }}
+        />
+      </GenericModal>
+
+      {/* Ascended Climbs Modal */}
+      <GenericModal
+        isOpen={isAscendedClimbsModalOpen}
+        onClose={() => setIsAscendedClimbsModalOpen(false)}
+        title={`${t("Ascended Climbs")} (${ascendedClimbs.length})`}
+      >
+        {isLoadingAscendedClimbs ? (
+          <ActivityIndicator size="large" />
+        ) : (
+          <FlatList
+            data={ascendedClimbs}
+            renderItem={({ item }) => (
+              <View style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: '#eee' }}>
+                <Text style={{ fontWeight: 'bold' }}>{item.title}</Text>
+                <Text>Grade: {item.grade}</Text>
+                <Text>Likes: {item.likesCount}</Text>
+                <Text>Comments: {item.commentsCount}</Text>
+                <Button 
+                  onPress={() => {
+                    router.navigate({
+                      pathname: `/view-climb/view-climb`,
+                      params: { climbId: item.id },
+                    });
+                    setIsAscendedClimbsModalOpen(false);
+                  }}
+                >
+                  <ButtonText>{t("View Details")}</ButtonText>
+                </Button>
+              </View>
+            )}
+            keyExtractor={(item) => item.id}
+            style={{ maxHeight: 400 }}
+          />
+        )}
+      </GenericModal>
+
+      {/* Edit Profile Modal */}
       <GenericModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -564,7 +676,6 @@ const confirmUnfollow = useCallback(async () => {
               variant="solid"
               onPress={saveProfileChanges}
               disabled={isUpdating}
-              // icon={isUpdating ? ActivityIndicator : undefined}
             >
               <ButtonText>{t("Save")}</ButtonText>
             </Button>
@@ -613,5 +724,3 @@ export const Profile = () => {
     </SafeAreaView>
   );
 };
-
-
