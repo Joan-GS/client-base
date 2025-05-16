@@ -336,61 +336,73 @@ const ProfileScreen = () => {
     }
   }, [targetUserId]);
 
-  /**
-   * Follow a user
-   */
-  const handleFollow = useCallback(async (userTarget: string) => {
-    try {
-      await followUser(userTarget);
+ /**
+ * Follow a user
+ */
+const handleFollow = useCallback(async (userTarget: string) => {
+  try {
+    await followUser(userTarget);
 
-      const [updatedFollowers, updatedFollowing] = await Promise.all([
-        fetchFollowers(targetUserId || ""),
-        fetchFollowing(targetUserId || ""),
-      ]);
+    // Update the specific user's follow status in followers/following lists
+    setFollowersList(prev => prev.map(user => 
+      user.followerUser?.id === userTarget 
+        ? { ...user, isFollowing: true } 
+        : user
+    ));
+    
+    setFollowingList(prev => prev.map(user => 
+      user.followingUser?.id === userTarget 
+        ? { ...user, isFollowing: true } 
+        : user
+    ));
 
-      setFollowersList(updatedFollowers);
-      setFollowingList(updatedFollowing);
-
-      setProfileData((prev) => ({
+    // If we're on another user's profile, update their follow status
+    if (!isCurrentUser && targetUserId === userTarget) {
+      setProfileData(prev => ({
         ...prev,
-        isFollowing: true,
-        followers: updatedFollowers,
-        following: updatedFollowing,
+        isFollowing: true
       }));
-    } catch (error) {
-      console.error("Error following user:", error);
     }
-  }, []);
+  } catch (error) {
+    console.error("Error following user:", error);
+  }
+}, [isCurrentUser, targetUserId]);
 
-  /**
-   * Unfollow a user after confirmation
-   */
-  const confirmUnfollow = useCallback(async () => {
-    if (!userToUnfollow) return;
+/**
+ * Unfollow a user after confirmation
+ */
+const confirmUnfollow = useCallback(async () => {
+  if (!userToUnfollow) return;
 
-    try {
-      await unfollowUser(userToUnfollow);
+  try {
+    await unfollowUser(userToUnfollow);
 
-      const [updatedFollowers, updatedFollowing] = await Promise.all([
-        fetchFollowers(targetUserId || ""),
-        fetchFollowing(targetUserId || ""),
-      ]);
+    // Update the specific user's follow status in followers/following lists
+    setFollowersList(prev => prev.map(user => 
+      user.followerUser?.id === userToUnfollow 
+        ? { ...user, isFollowing: false } 
+        : user
+    ));
+    
+    setFollowingList(prev => prev.map(user => 
+      user.followingUser?.id === userToUnfollow 
+        ? { ...user, isFollowing: false } 
+        : user
+    ));
 
-      setFollowersList(updatedFollowers);
-      setFollowingList(updatedFollowing);
-
-      setProfileData((prev) => ({
+    // If we're on another user's profile, update their follow status
+    if (!isCurrentUser && targetUserId === userToUnfollow) {
+      setProfileData(prev => ({
         ...prev,
-        isFollowing: false,
-        followers: updatedFollowers,
-        following: updatedFollowing,
+        isFollowing: false
       }));
-    } catch (error) {
-      console.error("Error unfollowing user:", error);
-    } finally {
-      setUserToUnfollow(null);
     }
-  }, [userToUnfollow, targetUserId]);
+  } catch (error) {
+    console.error("Error unfollowing user:", error);
+  } finally {
+    setUserToUnfollow(null);
+  }
+}, [userToUnfollow, isCurrentUser, targetUserId]);
 
   if (isLoading) {
     return (
