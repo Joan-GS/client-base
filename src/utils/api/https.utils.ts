@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 
-const API_URL = "http://localhost:8080/api/v1";
+const API_URL = "https://fe87-37-222-224-145.ngrok-free.app/api/v1";
 
 export const getAuthToken = async (): Promise<{
   token: string;
