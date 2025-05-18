@@ -46,6 +46,7 @@ import { handleRequest } from "@/src/utils/api/https.utils";
 // Types
 import { User } from "@joan16/shared-base";
 import {
+  ClimbCardWrapper,
   ClimbGridContainer,
   ContentContainer,
   LogoutButton,
@@ -259,7 +260,7 @@ const ProfileScreen = () => {
    */
   const renderClimbItem = useCallback(
     ({ item }: { item: Climb }) => (
-      <View style={{ width: "48%", marginBottom: 16 }}>
+      <ClimbCardWrapper key={item.id}>
         <GenericCard
           title={item.title}
           subtitle={`Grade: ${item.grade}`}
@@ -279,7 +280,7 @@ const ProfileScreen = () => {
             })
           }
         />
-      </View>
+      </ClimbCardWrapper>
     ),
     [handleToggleLike]
   );
@@ -521,9 +522,10 @@ const ProfileScreen = () => {
               data={climbs}
               renderItem={renderClimbItem}
               keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={{ justifyContent: "space-between" }}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              numColumns={3}
+              columnWrapperStyle={{
+                gap: 16,
+              }}
             />
           </ClimbGridContainer>
         </ContentContainer>
