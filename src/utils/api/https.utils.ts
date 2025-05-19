@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 
-const API_URL = "https://server-kilter.onrender.com/api/v1";
+const API_URL = process.env.API_URL || "https://api.example.com";
 
 export const getAuthToken = async (): Promise<{
   token: string;
