@@ -50,7 +50,9 @@ export const GenericControlledInput = ({
           <InputWrapper>
             <Input {...props}>
               <InputField
-                {...field}
+                value={field.value}
+                onChangeText={field.onChange}
+                onBlur={field.onBlur}
                 placeholder={placeholder}
                 type={isPasswordField && !showPassword ? "password" : "text"}
               />
