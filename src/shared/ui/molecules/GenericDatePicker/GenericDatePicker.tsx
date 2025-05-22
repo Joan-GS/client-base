@@ -1,7 +1,6 @@
 import { Platform, Pressable, TextInput as RNTextInput } from "react-native";
 import React, { useState } from "react";
 import { Control, useController } from "react-hook-form";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   FormControl,
   FormControlLabel,
@@ -74,7 +73,7 @@ export const GenericDatePicker = ({
             </Input>
           </Pressable>
 
-          {showPicker && (
+          {/* {showPicker && (
             <DateTimePicker
               value={value || new Date()}
               mode="date"
@@ -85,7 +84,7 @@ export const GenericDatePicker = ({
               }}
               maximumDate={new Date()}
             />
-          )}
+          )} */}
         </>
       )}
 

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import { SafeAreaView } from "@/src/components/ui/safe-area-view";
 import { VStack } from "@/src/components/ui/vstack";
 import { HStack } from "@/src/components/ui/hstack";
@@ -110,16 +110,21 @@ const MainContent = () => {
   const [loading, setLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const router = useRouter();
+
+  // Track scroll position to avoid multiple triggers
+  const scrollPositionRef = useRef(0);
 
   useEffect(() => {
     loadClimbs();
   }, []);
 
   const loadClimbs = async () => {
-    if (!hasMore) return;
+    if (!hasMore || (isFetchingMore && !isInitialLoad)) return;
 
     try {
+      setIsFetchingMore(true);
       const response = await fetchClimbs(page, ITEMS_PER_PAGE);
       const newClimbs = response.data || [];
 
@@ -131,13 +136,28 @@ const MainContent = () => {
     } finally {
       setLoading(false);
       setIsFetchingMore(false);
+      setIsInitialLoad(false);
     }
   };
 
-  const handleLoadMore = () => {
-    if (isFetchingMore || !hasMore) return;
-    setIsFetchingMore(true);
-    loadClimbs();
+  const handleScroll = ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+    const currentScrollPosition = contentOffset.y;
+    
+    // Avoid multiple triggers during the same scroll event
+    if (Math.abs(currentScrollPosition - scrollPositionRef.current) < 50) {
+      return;
+    }
+    scrollPositionRef.current = currentScrollPosition;
+
+    const paddingToBottom = 20;
+    const isNearBottom = 
+      layoutMeasurement.height + contentOffset.y >= 
+      contentSize.height - paddingToBottom;
+
+    if (isNearBottom && !isFetchingMore && hasMore) {
+      loadClimbs();
+    }
   };
 
   const handleToggleLike = async (climbId: string, isLiked: boolean) => {
@@ -157,10 +177,28 @@ const MainContent = () => {
       await toggleLikeClimb(climbId, isLiked);
     } catch (error) {
       console.error("Error updating like:", error);
+      // Revert on error
+      setClimbs((prevClimbs) =>
+        prevClimbs.map((climb) =>
+          climb.id === climbId
+            ? {
+                ...climb,
+                isLiked,
+                likesCount: isLiked ? climb.likesCount : climb.likesCount - 1,
+              }
+            : climb
+        )
+      );
     }
   };
 
-  if (loading) return <ActivityIndicator size="large" color="#000" />;
+  if (loading && isInitialLoad) {
+    return (
+      <Box flex={1} justifyContent="center" alignItems="center">
+        <ActivityIndicator size="large" color="#000" />
+      </Box>
+    );
+  }
 
   return (
     <ScrollView
@@ -172,16 +210,8 @@ const MainContent = () => {
         paddingHorizontal: 10,
         paddingBottom: 100,
       }}
-      onScroll={({ nativeEvent }) => {
-        const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-        if (
-          layoutMeasurement.height + contentOffset.y >=
-          contentSize.height - 50
-        ) {
-          handleLoadMore();
-        }
-      }}
-      scrollEventThrottle={400}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
     >
       {climbs.length === 0 ? (
         <Text>{t("No climbs available")}</Text>
@@ -211,7 +241,17 @@ const MainContent = () => {
         ))
       )}
 
-      {isFetchingMore && <Spinner size="large" color="black" />}
+      {isFetchingMore && (
+        <Box py="$4" width="$full" alignItems="center">
+          <Spinner size="large" color="black" />
+        </Box>
+      )}
+
+      {!hasMore && climbs.length > 0 && (
+        <Box py="$4">
+          <Text>{t("No more climbs to load")}</Text>
+        </Box>
+      )}
     </ScrollView>
   );
 };
