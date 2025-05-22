@@ -1,3 +1,4 @@
+// view-climb.styles.ts
 import { styled } from "@gluestack-style/react";
 import { Button } from "@/src/components/ui/button";
 import { Pressable } from "@/src/components/ui/pressable";
@@ -8,16 +9,13 @@ export const ClimbContainer = styled(View, {
   flex: 1,
   backgroundColor: "#fff",
   marginBottom: 60
-
 });
 
 export const ClimbHeader = styled(View, {
   position: "relative",
   width: "100%",
-  // Usamos aspectRatio para mantener la proporción en todas las pantallas
-  aspectRatio: 1, // Proporción 4:3 (puedes ajustar según tus necesidades)
-  maxHeight: 600, // Límite máximo para pantallas grandes
-  minHeight: 300, // Límite mínimo para pantallas pequeñas
+  maxHeight: 600,
+  minHeight: 300,
   overflow: "hidden",
   alignItems: "center",
 });
@@ -25,10 +23,11 @@ export const ClimbHeader = styled(View, {
 export const ClimbImage = styled(Image, {
   width: "100%",
   height: "100%",
-  resizeMode: "cover", // Asegura que la imagen cubra todo el espacio
-  position: "relative", // Para que no afecte el layout
+  resizeMode: "cover",
+  position: "relative",
   top: 0,
   left: 0,
+  minHeight: 500,
   maxHeight: 700,
   maxWidth: 700,
 });
@@ -174,3 +173,28 @@ export const BluetoothButton = styled(Button, {
   minWidth: 80,
 });
 
+// styles.ts
+export const ModalContainer = styled(View, {
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0,0,0,0.5)",
+});
+
+export const ModalContent = styled(View, {
+  backgroundColor: "white",
+  borderRadius: 12,
+  padding: 20,
+  width: "80%",
+  maxHeight: "60%",
+});
+
+export const DeviceItem = styled(Pressable, {
+  padding: 16,
+  borderBottomWidth: 1,
+  borderBottomColor: "#eee",
+});
+
+export const DeviceText = styled(Text, {
+  fontSize: 16,
+});

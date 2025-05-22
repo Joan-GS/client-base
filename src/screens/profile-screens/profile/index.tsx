@@ -1,7 +1,7 @@
 // screens/ProfileScreen.tsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, ScrollView, View, FlatList } from "react-native";
+import { ActivityIndicator, ScrollView, View, StyleSheet } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowLeft,
@@ -102,16 +102,11 @@ const ProfileScreen = () => {
   const { loadUserProfile, updateUserProfile } = useProfile();
 
   // State management
-  const [profileData, setProfileData] =
-    useState<ProfileData>(initialProfileData);
+  const [profileData, setProfileData] = useState<ProfileData>(initialProfileData);
   const [climbs, setClimbs] = useState<Climb[]>([]);
   const [ascendedClimbs, setAscendedClimbs] = useState<any[]>([]);
-  const [followersList, setFollowersList] = useState<FollowerFollowingItem[]>(
-    []
-  );
-  const [followingList, setFollowingList] = useState<FollowerFollowingItem[]>(
-    []
-  );
+  const [followersList, setFollowersList] = useState<FollowerFollowingItem[]>([]);
+  const [followingList, setFollowingList] = useState<FollowerFollowingItem[]>([]);
   const [isCurrentUser, setIsCurrentUser] = useState(false);
 
   // Loading states
@@ -127,8 +122,7 @@ const ProfileScreen = () => {
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
   const [isMyClimbsModalOpen, setIsMyClimbsModalOpen] = useState(false);
-  const [isAscendedClimbsModalOpen, setIsAscendedClimbsModalOpen] =
-    useState(false);
+  const [isAscendedClimbsModalOpen, setIsAscendedClimbsModalOpen] = useState(false);
   const [userToUnfollow, setUserToUnfollow] = useState<string | null>(null);
 
   // Memoized values
@@ -259,7 +253,7 @@ const ProfileScreen = () => {
    * Render a climb item
    */
   const renderClimbItem = useCallback(
-    ({ item }: { item: Climb }) => (
+    (item: Climb) => (
       <ClimbCardWrapper key={item.id}>
         <GenericCard
           title={item.title}
@@ -475,7 +469,10 @@ const ProfileScreen = () => {
 
   return (
     <MainContainer style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
         <ContentContainer>
           {!isCurrentUser && (
             <Pressable
@@ -518,15 +515,19 @@ const ProfileScreen = () => {
           </ProfileContainer>
 
           <ClimbGridContainer>
-            <FlatList
-              data={climbs}
-              renderItem={renderClimbItem}
-              keyExtractor={(item) => item.id}
-              numColumns={3}
-              columnWrapperStyle={{
-                gap: 16,
-              }}
-            />
+            {climbs.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>
+                  {isCurrentUser 
+                    ? t("You haven't created any climbs yet") 
+                    : t("This user hasn't created any climbs yet")}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.climbsGrid}>
+                {climbs.map((climb) => renderClimbItem(climb))}
+              </View>
+            )}
           </ClimbGridContainer>
         </ContentContainer>
       </ScrollView>
@@ -559,10 +560,10 @@ const ProfileScreen = () => {
         {isLoadingFollowers ? (
           <ActivityIndicator size="large" />
         ) : (
-          <FlatList
-            data={followersList}
-            renderItem={({ item }) => (
+          <ScrollView style={{ maxHeight: 400 }}>
+            {followersList.map((item) => (
               <UserListItem
+                key={item.id}
                 user={item.followerUser || { id: "", username: "" }}
                 isFollowing={item.isFollowing}
                 currentUserId={currentUser?.id || undefined}
@@ -577,10 +578,8 @@ const ProfileScreen = () => {
                   setUserToUnfollow(item.followerUser?.id || null)
                 }
               />
-            )}
-            keyExtractor={(item) => item.id}
-            style={{ maxHeight: 400 }}
-          />
+            ))}
+          </ScrollView>
         )}
       </GenericModal>
 
@@ -593,10 +592,10 @@ const ProfileScreen = () => {
         {isLoadingFollowing ? (
           <ActivityIndicator size="large" />
         ) : (
-          <FlatList
-            data={followingList}
-            renderItem={({ item }) => (
+          <ScrollView style={{ maxHeight: 400 }}>
+            {followingList.map((item) => (
               <UserListItem
+                key={item.id}
                 user={item.followingUser || { id: "", username: "" }}
                 isFollowing={item.isFollowing}
                 currentUserId={currentUser?.id || undefined}
@@ -611,10 +610,8 @@ const ProfileScreen = () => {
                   setUserToUnfollow(item.followingUser?.id || null)
                 }
               />
-            )}
-            keyExtractor={(item) => item.id}
-            style={{ maxHeight: 400 }}
-          />
+            ))}
+          </ScrollView>
         )}
       </GenericModal>
 
@@ -624,10 +621,10 @@ const ProfileScreen = () => {
         onClose={() => setIsMyClimbsModalOpen(false)}
         title={`${t("My Climbs")} (${climbs.length})`}
       >
-        <FlatList
-          data={climbs}
-          renderItem={({ item }) => (
+        <ScrollView style={{ maxHeight: 400 }}>
+          {climbs.map((item) => (
             <View
+              key={item.id}
               style={{
                 padding: 10,
                 borderBottomWidth: 1,
@@ -648,10 +645,8 @@ const ProfileScreen = () => {
                 <ButtonText>{t("View Details")}</ButtonText>
               </Button>
             </View>
-          )}
-          keyExtractor={(item) => item.id}
-          style={{ maxHeight: 400 }}
-        />
+          ))}
+        </ScrollView>
       </GenericModal>
 
       {/* Ascended Climbs Modal */}
@@ -663,10 +658,10 @@ const ProfileScreen = () => {
         {isLoadingAscendedClimbs ? (
           <ActivityIndicator size="large" />
         ) : (
-          <FlatList
-            data={ascendedClimbs}
-            renderItem={({ item }) => (
+          <ScrollView style={{ maxHeight: 400 }}>
+            {ascendedClimbs.map((item) => (
               <View
+                key={item.id}
                 style={{
                   padding: 10,
                   borderBottomWidth: 1,
@@ -694,10 +689,8 @@ const ProfileScreen = () => {
                   <ButtonText>{t("View Details")}</ButtonText>
                 </Button>
               </View>
-            )}
-            keyExtractor={(item) => item.id}
-            style={{ maxHeight: 400 }}
-          />
+            ))}
+          </ScrollView>
         )}
       </GenericModal>
 
@@ -750,6 +743,27 @@ const ProfileScreen = () => {
     </MainContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  climbsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    gap: 10,
+    marginBottom: 24,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 16,
+  },
+});
 
 export const Profile = () => {
   return (

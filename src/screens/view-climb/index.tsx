@@ -1,61 +1,57 @@
-import { DashboardLayout } from "../dashboard/dashboard-layout";
-import { SafeAreaView } from "@/src/components/ui/safe-area-view";
-
-import React, { useState, useEffect } from "react";
+// index.tsx
+import React, { useEffect, useState } from "react";
+import { ScrollView, View, Text, ActivityIndicator, Modal, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import { ActivityIndicator, ScrollView, View, Text } from "react-native";
 import {
-  ArrowLeft,
   Bluetooth,
-  Calendar,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
+  ArrowLeft,
   Heart,
-  MapPin,
   MessageCircle,
-  Star,
+  Calendar,
+  MapPin,
   Tag,
-  ThumbsUp,
   User,
+  Check,
 } from "lucide-react-native";
-
-// Styles
-import {
-  ClimbHeader,
-  ClimbContent,
-  ClimbContainer,
-  ClimbImage,
-  ClimbOverlay,
-  DetailRow,
-  DetailText,
-  GradeText,
-  SectionTitle,
-  StatItem,
-  StatLabel,
-  StatsContainer,
-  StatValue,
-  TagPill,
-  TagsContainer,
-  BluetoothButton,
-  BackButton,
-  ClimbGrade,
-  ClimbTitle,
-  ClimbTitleContainer,
-  DescriptionBox,
-} from "./styles";
-
-// API
-import { handleRequest } from "@/src/utils/api/https.utils";
-import { ButtonIcon } from "@gluestack-ui/themed";
-import useBLE from "@/src/hooks/useBLE";
+import { SafeAreaView } from "@/src/components/ui/safe-area-view";
+import { DashboardLayout } from "../dashboard/dashboard-layout";
+import { Button, ButtonText, ButtonIcon } from "@/src/components/ui/button";
 import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
-import { Button, ButtonText } from "@/src/components/ui/button";
+import useBLE from "@/src/hooks/useBLE";
 import { ascendClimb, fetchClimb } from "./api/view-climb";
 import { ASCENSION_TYPE } from "@joan16/shared-base";
+import { DifficultyPerceptionSelector, StarRating } from "@/src/shared";
 
-// Types
+// Import styles from the separate file
+import {
+  ClimbContainer,
+  ClimbHeader,
+  ClimbOverlay,
+  ClimbImage,
+  ClimbTitleContainer,
+  ClimbTitle,
+  ClimbContent,
+  ClimbGrade,
+  GradeText,
+  SectionTitle,
+  DetailRow,
+  DetailText,
+  DescriptionBox,
+  TagPill,
+  TagsContainer,
+  BackButton,
+  BluetoothButton,
+  StatItem,
+  StatValue,
+  StatLabel,
+  StatsContainer,
+  ModalContainer,
+  ModalContent,
+  DeviceItem,
+  DeviceText,
+} from "./styles";
+import { Heading } from "@/src/components/ui/heading";
+
 interface Climb {
   id: string;
   title: string;
@@ -78,37 +74,10 @@ interface Climb {
   difficultyPerception?: "easier" | "accurate" | "harder";
 }
 
-const StarRating = ({
-  rating,
-  setRating,
-}: {
-  rating: number;
-  setRating: (value: number) => void;
-}) => {
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        marginVertical: 10,
-        justifyContent: "center",
-      }}
-    >
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Button
-          key={star}
-          onPress={() => setRating(star)}
-          style={{ padding: 4, backgroundColor: "transparent" }}
-        >
-          <ButtonIcon as={Star} color={star <= rating ? "#FFD700" : "#ccc"} />
-        </Button>
-      ))}
-    </View>
-  );
-};
-
 const MainContent = () => {
   const params = useLocalSearchParams();
   const climbId = params.climbId as string | undefined;
+  const toast = useToast();
   const [climb, setClimb] = useState<Climb | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -119,7 +88,7 @@ const MainContent = () => {
   >("accurate");
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
-  const toast = useToast();
+  const [showBluetoothModal, setShowBluetoothModal] = useState(false);
 
   const {
     scanDevices,
@@ -135,55 +104,44 @@ const MainContent = () => {
   } = useBLE();
 
   useEffect(() => {
-    const fetchClimbData = async () => {
+    const loadClimb = async () => {
       try {
-        const climbData = await fetchClimb(climbId || "");
-        console.log("Climb data:", climbData);
+        if (!climbId) return;
+        const climbData = await fetchClimb(climbId);
         setClimb(climbData);
         setIsCompleted(climbData.isAscended || false);
-        if (climbData.userRating) {
-          setUserRating(climbData.userRating);
-        }
-        if (climbData.difficultyPerception) {
-          setDifficultyPerception(climbData.difficultyPerception);
-        }
-        setShowRating(false); // No mostrar rating al cargar inicialmente
+        setUserRating(climbData.userRating || 0);
+        setDifficultyPerception(climbData.difficultyPerception || "accurate");
       } catch (err) {
-        console.error("Failed to fetch climb:", err);
+        console.error("Fetch error:", err);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchClimbData();
+    loadClimb();
   }, [climbId]);
 
   const handleCompleteClimb = async () => {
     if (!climbId) return;
-
     setIsLoadingCompletion(true);
     try {
-      console.log("Completing climb:", climbId, "Type:", ASCENSION_TYPE.FLASH);
       await ascendClimb(climbId, ASCENSION_TYPE.FLASH);
       setIsCompleted(true);
-      setShowRating(true); // Mostrar el rating solo después de completar
+      setShowRating(true);
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="success">
-            <ToastTitle>¡Ascensión registrada correctamente!</ToastTitle>
+            <ToastTitle>Climb logged!</ToastTitle>
           </Toast>
         ),
       });
-
-      const response = await fetchClimb(climbId);
-      if (response.data) {
-        setClimb(response.data);
-      }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
-            <ToastTitle>Error al registrar la ascensión</ToastTitle>
+            <ToastTitle>Error saving ascent: {errorMessage}</ToastTitle>
           </Toast>
         ),
       });
@@ -192,87 +150,26 @@ const MainContent = () => {
     }
   };
 
-  const DifficultyPerception = ({
-    value,
-    onChange,
-  }: {
-    value: "easier" | "accurate" | "harder";
-    onChange: (value: "easier" | "accurate" | "harder") => void;
-  }) => {
-    return (
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "center",
-          marginVertical: 10,
-        }}
-      >
-        <Button
-          variant={value === "easier" ? "solid" : "outline"}
-          onPress={() => onChange("easier")}
-          style={{ marginHorizontal: 4 }}
-        >
-          <ButtonIcon
-            as={ChevronDown}
-            color={value === "accurate" ? "white" : "#555"}
-          />
-          <ButtonText>Easier</ButtonText>
-        </Button>
-
-        <Button
-          variant={value === "accurate" ? "solid" : "outline"}
-          onPress={() => onChange("accurate")}
-          style={{ marginHorizontal: 4 }}
-        >
-          <ButtonIcon
-            as={ChevronRight}
-            color={value === "accurate" ? "white" : "#555"}
-          />
-          <ButtonText>Accurate</ButtonText>
-        </Button>
-
-        <Button
-          variant={value === "harder" ? "solid" : "outline"}
-          onPress={() => onChange("harder")}
-          style={{ marginHorizontal: 4 }}
-        >
-          <ButtonIcon
-            as={ChevronUp}
-            color={value === "harder" ? "white" : "#555"}
-          />
-          <ButtonText>Harder</ButtonText>
-        </Button>
-      </View>
-    );
-  };
-
   const saveRating = async () => {
     if (!climbId) return;
-
     setIsRatingLoading(true);
     try {
-      // await handleRequest({
-      //   url: `/climbs/${climbId}/rate`,
-      //   method: 'POST',
-      //   data: {
-      //     rating: userRating,
-      //     difficultyPerception
-      //   }
-      // });
-
-      setShowRating(false); // Ocultar el rating después de enviarlo
+      // Request would be here
+      setShowRating(false);
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="success">
-            <ToastTitle>Rating saved successfully!</ToastTitle>
+            <ToastTitle>Rating saved</ToastTitle>
           </Toast>
         ),
       });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Rating failed";
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
-            <ToastTitle>Error saving rating</ToastTitle>
+            <ToastTitle>{errorMessage}</ToastTitle>
           </Toast>
         ),
       });
@@ -281,58 +178,58 @@ const MainContent = () => {
     }
   };
 
-  const sendToBluetooth = async () => {
-    if (isWeb) {
+  const openBluetoothModal = async () => {
+    if (isWeb || !climb) {
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
-            <ToastTitle>
-              Bluetooth functionality is not available in web version
-            </ToastTitle>
+            <ToastTitle>Bluetooth not available</ToastTitle>
           </Toast>
         ),
       });
       return;
     }
-
-    if (!climb) return;
-
+    setShowBluetoothModal(true);
     try {
-      if (!connectedDevice) {
-        await scanDevices();
-        if (devices.length === 0) {
-          toast.show({
-            render: ({ id }) => (
-              <Toast nativeID={id} action="error">
-                <ToastTitle>No BLE devices found</ToastTitle>
-              </Toast>
-            ),
-          });
-          return;
-        }
-        await connectToDevice(devices[0]);
-      }
-
-      const dataToSend = JSON.stringify({
-        climbId: climb.id,
-        title: climb.title,
-        grade: climb.grade,
-        description: climb.description,
+      await scanDevices();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to scan devices";
+      toast.show({
+        render: ({ id }) => (
+          <Toast nativeID={id} action="error">
+            <ToastTitle>{errorMessage}</ToastTitle>
+          </Toast>
+        ),
       });
+    }
+  };
 
+  const connectAndSend = async (device: any) => {
+    try {
+      await connectToDevice(device);
+      const dataToSend = JSON.stringify({
+        climbId: climb?.id,
+        title: climb?.title,
+        grade: climb?.grade,
+        description: climb?.description,
+      });
       await sendData(dataToSend);
+      setShowBluetoothModal(false);
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="success">
-            <ToastTitle>Data sent successfully to Bluetooth device</ToastTitle>
+            <ToastTitle>Data sent to {device.name}</ToastTitle>
           </Toast>
         ),
       });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to connect/send";
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
-            <ToastTitle>Failed to send via Bluetooth</ToastTitle>
+            <ToastTitle>{errorMessage}</ToastTitle>
           </Toast>
         ),
       });
@@ -341,9 +238,7 @@ const MainContent = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      >
+      <SafeAreaView className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
       </SafeAreaView>
     );
@@ -351,12 +246,10 @@ const MainContent = () => {
 
   if (!climb) {
     return (
-      <SafeAreaView
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      >
-        <Text>No se encontró la ruta</Text>
+      <SafeAreaView className="flex-1 justify-center items-center">
+        <Text>Climb not found</Text>
         <Button onPress={() => router.back()}>
-          <ButtonText>Volver</ButtonText>
+          <ButtonText>Go Back</ButtonText>
         </Button>
       </SafeAreaView>
     );
@@ -371,7 +264,7 @@ const MainContent = () => {
               <ClimbImage source={{ uri: climb.imageUrl }} />
               <ClimbOverlay>
                 <ClimbTitleContainer>
-                  <ClimbTitle>{climb.title}</ClimbTitle>
+                  <Heading size="2xl" style={{color: "gray"}}>{climb.title}</Heading>
                   <ClimbGrade>
                     <GradeText>{climb.grade}</GradeText>
                   </ClimbGrade>
@@ -379,18 +272,11 @@ const MainContent = () => {
               </ClimbOverlay>
             </>
           ) : (
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "#ccc",
-                justifyContent: "flex-end",
-                padding: 20,
-              }}
-            >
+            <View className="flex-1 bg-gray-300 justify-end p-6">
               <ClimbTitleContainer>
-                <ClimbTitle style={{ color: "#333" }}>{climb.title}</ClimbTitle>
-                <ClimbGrade style={{ backgroundColor: "#ddd" }}>
-                  <GradeText style={{ color: "#333" }}>{climb.grade}</GradeText>
+                <Heading className="text-gray-900">{climb.title}</Heading>
+                <ClimbGrade className="bg-gray-200">
+                  <GradeText className="text-gray-900">{climb.grade}</GradeText>
                 </ClimbGrade>
               </ClimbTitleContainer>
             </View>
@@ -401,7 +287,7 @@ const MainContent = () => {
           </BackButton>
 
           <BluetoothButton
-            onPress={sendToBluetooth}
+            onPress={openBluetoothModal}
             disabled={isScanning || isConnecting || isSending}
           >
             <ButtonIcon as={Bluetooth} color="#fff" />
@@ -421,25 +307,14 @@ const MainContent = () => {
 
         <ClimbContent>
           <SectionTitle>Route Details</SectionTitle>
-
-          <DetailRow>
-            <User size={18} color="#555" />
-            <DetailText>
-              {climb.author?.username || "Unknown author"}
-            </DetailText>
-          </DetailRow>
-
           <DetailRow>
             <MapPin size={18} color="#555" />
-            <DetailText>
-              {climb.wall?.name || "Location not specified"}
-            </DetailText>
+            <DetailText>{climb.isAscended || "Not specified"}</DetailText>
           </DetailRow>
-
           <DetailRow>
             <Calendar size={18} color="#555" />
             <DetailText>
-              {new Date(climb.createdAt).toLocaleDateString()}
+              {climb.createdAt}
             </DetailText>
           </DetailRow>
 
@@ -456,8 +331,8 @@ const MainContent = () => {
             <>
               <SectionTitle>Tags</SectionTitle>
               <TagsContainer>
-                {climb.tags.map((tag, index) => (
-                  <TagPill key={index}>
+                {climb.tags.map((tag, idx) => (
+                  <TagPill key={idx}>
                     <DetailRow>
                       <Tag size={14} color="#555" />
                       <DetailText>{tag}</DetailText>
@@ -471,55 +346,36 @@ const MainContent = () => {
           <Button
             onPress={handleCompleteClimb}
             disabled={isCompleted || isLoadingCompletion}
-            style={{
-              backgroundColor: isCompleted ? "#ccc" : "#4CAF50",
-              marginTop: 20,
-              maxWidth: 900,
-              minWidth: 300,
-              alignSelf: "center",
-            }}
+            style={{ backgroundColor: isCompleted ? "#ccc" : "#4CAF50" }}
           >
-            <ButtonIcon as={isCompleted ? Check : Check} color={"white"} />
-
+            <ButtonIcon as={Check} color="white" />
             <ButtonText>
-              <Text>
-                {isLoadingCompletion
-                  ? "Saving..."
-                  : isCompleted
-                  ? "Completed"
-                  : "Log Ascent"}
-              </Text>
+              {isLoadingCompletion
+                ? "Saving..."
+                : isCompleted
+                ? "Completed"
+                : "Log Ascent"}
             </ButtonText>
           </Button>
 
           {isCompleted && showRating && (
-            <View
-              style={{
-                marginTop: 20,
-                padding: 16,
-                backgroundColor: "#f5f5f5",
-                borderRadius: 8,
-              }}
-            >
+            <View className="mt-6 p-4 bg-gray-100 rounded-lg">
               <SectionTitle>Rate this climb</SectionTitle>
-
-              <Text style={{ marginBottom: 8, textAlign: "center" }}>
+              <Text className="text-center mb-2">
                 How would you rate this climb?
               </Text>
               <StarRating rating={userRating} setRating={setUserRating} />
-
-              <Text style={{ marginBottom: 8, textAlign: "center" }}>
+              <Text className="text-center mb-2">
                 How did the difficulty feel?
               </Text>
-              <DifficultyPerception
+              <DifficultyPerceptionSelector
                 value={difficultyPerception}
                 onChange={setDifficultyPerception}
               />
-
               <Button
                 onPress={saveRating}
                 disabled={isRatingLoading || userRating === 0}
-                style={{ marginTop: 16 }}
+                className="mt-4"
               >
                 <ButtonText>
                   {isRatingLoading ? "Saving..." : "Submit Rating"}
@@ -536,7 +392,6 @@ const MainContent = () => {
               </DetailRow>
               <StatLabel>Likes</StatLabel>
             </StatItem>
-
             <StatItem>
               <DetailRow>
                 <MessageCircle size={18} color="#555" />
@@ -547,20 +402,55 @@ const MainContent = () => {
           </StatsContainer>
         </ClimbContent>
       </ScrollView>
+
+      {/* Bluetooth Device Selection Modal */}
+      <Modal
+        visible={showBluetoothModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowBluetoothModal(false)}
+      >
+        <ModalContainer>
+          <ModalContent>
+            <Text className="text-lg font-bold mb-4">Select Bluetooth Device</Text>
+            {isScanning ? (
+              <View className="flex items-center justify-center py-8">
+                <ActivityIndicator size="large" />
+                <Text className="mt-4">Scanning for devices...</Text>
+              </View>
+            ) : devices.length === 0 ? (
+              <Text className="text-center py-8">No devices found</Text>
+            ) : (
+              <View>
+                {devices.map((device, index) => (
+                  <DeviceItem key={index} onPress={() => connectAndSend(device)}>
+                    <DeviceText>{device.name || "Unknown Device"}</DeviceText>
+                  </DeviceItem>
+                ))}
+              </View>
+            )}
+            <Button
+              variant="outline"
+              onPress={() => setShowBluetoothModal(false)}
+              className="mt-4"
+            >
+              <ButtonText>Cancel</ButtonText>
+            </Button>
+          </ModalContent>
+        </ModalContainer>
+      </Modal>
     </ClimbContainer>
   );
 };
 
-export const ViewClimbPage = () => {
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <DashboardLayout
-        title="View Climb"
-        isSidebarVisible
-        isHeaderVisible={false}
-      >
-        <MainContent />
-      </DashboardLayout>
-    </SafeAreaView>
-  );
-};
+export const ViewClimbPage = () => (
+  <SafeAreaView style={{ flex: 1 }}>
+    <DashboardLayout
+      title="View Climb"
+      isSidebarVisible
+      isHeaderVisible={false}
+    >
+      <MainContent />
+    </DashboardLayout>
+  </SafeAreaView>
+);

@@ -99,7 +99,7 @@ const SignUpWithLeftBackground = () => {
       toast.show({
         render: ({ id }) => (
           <Toast nativeID={id} action="error">
-            <ToastTitle>{t("Invalid credentials")}</ToastTitle>
+            <ToastTitle>{t("Register Error")}</ToastTitle>
           </Toast>
         ),
       });

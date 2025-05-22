@@ -30,15 +30,23 @@ export const TabsContainer = styled(View, {
 
 export const TabButton = styled(Button, {
   flex: 1,
+  minHeight: 40, // Altura mínima para mejor tacto
+  paddingHorizontal: 8, // Reducir padding en móviles
   variants: {
     active: {
       true: {
         bg: "$primary600",
-        _text: { color: "$white" },
+        _text: { 
+          color: "$white",
+          fontSize: 14 // Tamaño de fuente más pequeño para móviles
+        },
       },
       false: {
         bg: "$background100",
-        _text: { color: "$text700" },
+        _text: { 
+          color: "$text700",
+          fontSize: 14
+        },
       },
     },
   },

@@ -169,6 +169,8 @@ const MainContent = () => {
         alignItems: "center",
         gap: 20,
         paddingVertical: 20,
+        paddingHorizontal: 10,
+        paddingBottom: 100,
       }}
       onScroll={({ nativeEvent }) => {
         const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;

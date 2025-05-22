@@ -122,7 +122,7 @@ export const ClimbGridContent = styled(View, {
 
 export const ClimbCardWrapper = styled(View, {
   width: "100%",
-  minWidth: 405,
+  minWidth: 300,
   alignItems: "center",
 
   "@base": {

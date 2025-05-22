@@ -8,6 +8,7 @@ import {
   StyledText,
   StyledTitle,
 } from "./styles";
+import { Heart } from "lucide-react-native";
 
 interface GenericCardProps {
   imageUrl?: string;
@@ -51,10 +52,10 @@ const GenericCard: React.FC<GenericCardProps> = ({
         {description && <StyledText>{description}</StyledText>}
         <StyledFooter>
           <StyledIconButton onPress={onPrimaryAction}>
-            <Icon
-              as={primaryIcon}
-              fill={isLiked ? "red" : "transparent"}
-              style={{
+            <Heart
+              fill={isLiked ? "#ef4444" : "transparent"}
+              color={isLiked ? "#ef4444" : "#9ca3af"}
+                style={{
                 marginRight: 8,
               }}
             />

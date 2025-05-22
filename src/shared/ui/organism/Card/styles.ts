@@ -26,7 +26,7 @@ export const StyledImage = styled(Image, {
   width: "100%",
   height: 420,
   borderRadius: 8,
-  resizeMode: "contain",
+  resizeMode: "cover",
 });
 
 export const StyledTitle = styled(Text, {
