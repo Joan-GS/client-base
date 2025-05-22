@@ -12,6 +12,8 @@ export const SearchHeader = styled(VStack, {
   padding: 16,
   paddingBottom: 8,
   backgroundColor: "$background0",
+  position: "relative",
+  flexDirection: "row",
 });
 
 export const SearchInputContainer = styled(HStack, {
@@ -26,6 +28,7 @@ export const TabsContainer = styled(View, {
   gap: 12,
   marginBottom: 12,
   flexDirection: "row",
+  position: "relative",
 });
 
 export const TabButton = styled(Button, {
@@ -80,10 +83,11 @@ export const ClimbItem = styled(Pressable, {
   shadowOffset: { width: 0, height: 5 },
   shadowOpacity: 0.1,
   shadowRadius: 10,
-  elevation: 1,
+  elevation: 5,
   maxWidth: 700,
   alignSelf: "center",
   width: "100%",
+
 });
 
 export const ClimbRow = styled(View, {
@@ -153,4 +157,11 @@ export const StarIcon = styled(Text, {
 export const HeartIcon = styled(Text, {
   color: "$rose400",
   fontSize: 14,
+});
+
+export const FilterButtonContainer = styled(View, {
+  position: "relative",
+  right: 0,
+  padding: 8,
+  
 });

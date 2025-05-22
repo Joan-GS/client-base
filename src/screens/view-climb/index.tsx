@@ -1,6 +1,13 @@
 // index.tsx
 import React, { useEffect, useState } from "react";
-import { ScrollView, View, Text, ActivityIndicator, Modal, TouchableOpacity } from "react-native";
+import {
+  ScrollView,
+  View,
+  Text,
+  ActivityIndicator,
+  Modal,
+  TouchableOpacity,
+} from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import {
   Bluetooth,
@@ -69,6 +76,7 @@ interface Climb {
     name: string;
   };
   tags?: string[];
+  bluetoothCode: string;
   isAscended?: boolean;
   userRating?: number;
   difficultyPerception?: "easier" | "accurate" | "harder";
@@ -208,13 +216,12 @@ const MainContent = () => {
   const connectAndSend = async (device: any) => {
     try {
       await connectToDevice(device);
-      const dataToSend = JSON.stringify({
-        climbId: climb?.id,
-        title: climb?.title,
-        grade: climb?.grade,
-        description: climb?.description,
-      });
-      await sendData(dataToSend);
+
+      const rawCode = climb?.bluetoothCode;
+      if (!rawCode) throw new Error("No bluetoothCode found");
+
+      const cleanedCode = rawCode.replace(/\s+/g, ""); // elimina espacios
+      await sendData(cleanedCode);
       setShowBluetoothModal(false);
       toast.show({
         render: ({ id }) => (
@@ -264,7 +271,9 @@ const MainContent = () => {
               <ClimbImage source={{ uri: climb.imageUrl }} />
               <ClimbOverlay>
                 <ClimbTitleContainer>
-                  <Heading size="2xl" style={{color: "gray"}}>{climb.title}</Heading>
+                  <Heading size="2xl" style={{ color: "gray" }}>
+                    {climb.title}
+                  </Heading>
                   <ClimbGrade>
                     <GradeText>{climb.grade}</GradeText>
                   </ClimbGrade>
@@ -313,9 +322,7 @@ const MainContent = () => {
           </DetailRow>
           <DetailRow>
             <Calendar size={18} color="#555" />
-            <DetailText>
-              {climb.createdAt}
-            </DetailText>
+            <DetailText>{climb.createdAt}</DetailText>
           </DetailRow>
 
           {climb.description && (
@@ -412,7 +419,9 @@ const MainContent = () => {
       >
         <ModalContainer>
           <ModalContent>
-            <Text className="text-lg font-bold mb-4">Select Bluetooth Device</Text>
+            <Text className="text-lg font-bold mb-4">
+              Select Bluetooth Device
+            </Text>
             {isScanning ? (
               <View className="flex items-center justify-center py-8">
                 <ActivityIndicator size="large" />
@@ -423,7 +432,10 @@ const MainContent = () => {
             ) : (
               <View>
                 {devices.map((device, index) => (
-                  <DeviceItem key={index} onPress={() => connectAndSend(device)}>
+                  <DeviceItem
+                    key={index}
+                    onPress={() => connectAndSend(device)}
+                  >
                     <DeviceText>{device.name || "Unknown Device"}</DeviceText>
                   </DeviceItem>
                 ))}

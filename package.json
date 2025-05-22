@@ -50,6 +50,7 @@
     "@gluestack-ui/themed": "^1.1.65",
     "@gluestack-ui/toast": "^1.0.8",
     "@gluestack-ui/tooltip": "^0.1.38",
+    "@gorhom/bottom-sheet": "^5.1.4",
     "@hookform/resolvers": "^3.10.0",
     "@joan16/shared-base": "^1.0.4",
     "@legendapp/motion": "^2.4.0",
