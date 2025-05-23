@@ -1,36 +1,58 @@
 import { useState, useEffect, useCallback } from "react";
 import { PermissionsAndroid, Platform } from "react-native";
 import * as DeviceExpo from "expo-device";
+import { Buffer } from 'buffer';
 
-const SERVICE_UUID = "0000FFE0-0000-1000-8000-00805F9B34FB";
-const CHARACTERISTIC_UUID = "0000FFE1-0000-1000-8000-00805F9B34FB";
+/**
+ * BLE UUIDs specific to Aurora Boards
+ * 
+ * AURORA_ADVERTISING_UUID - Used to filter Aurora Boards during scanning
+ * AURORA_SERVICE_UUID - Main service UUID for communication
+ * AURORA_WRITE_CHARACTERISTIC_UUID - Characteristic for sending data to the board
+ */
+const AURORA_ADVERTISING_UUID = "4488B571-7806-4DF6-BCFF-A2897E4953FF";
+const AURORA_SERVICE_UUID = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
+const AURORA_WRITE_CHARACTERISTIC_UUID = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E";
 
-// Interface para el tipo Device mínimo necesario
+/**
+ * Minimal device interface for TypeScript typing
+ */
 interface SimpleDevice {
   id: string;
   name?: string;
+  serviceUUIDs?: string[];
 }
 
-// Implementación mock para web y cuando BLE no esté disponible
+/**
+ * Mock implementation for web and when BLE is not available
+ */
 class BleManagerMock {
   isMock = true;
   startDeviceScan() { console.log("BLE not available"); }
   stopDeviceScan() {}
-  connectToDevice(): Promise<SimpleDevice> { return Promise.resolve({ id: 'mock-device', name: 'Mock Device' }); }
+  connectToDevice(): Promise<SimpleDevice> { 
+    return Promise.resolve({ 
+      id: 'mock-device', 
+      name: 'Mock Aurora Board' 
+    }); 
+  }
   cancelDeviceConnection() { return Promise.resolve(); }
   discoverAllServicesAndCharacteristics() { return Promise.resolve(); }
   writeCharacteristicWithResponseForDevice() { return Promise.resolve(); }
   destroy() {}
 }
 
+/**
+ * Custom hook for BLE communication with Aurora Boards
+ */
 const useBLE = () => {
   const isWeb = Platform.OS === "web";
   
-  // Cargamos dinámicamente el BleManager solo si no estamos en web
+  /**
+   * Initialize BleManager (real implementation) or mock for web
+   */
   const [bleManager] = useState(() => {
-    if (isWeb) {
-      return new BleManagerMock();
-    }
+    if (isWeb) return new BleManagerMock();
     
     try {
       const { BleManager } = require('react-native-ble-plx');
@@ -41,12 +63,14 @@ const useBLE = () => {
     }
   });
 
+  // State management for BLE operations
   const [devices, setDevices] = useState<SimpleDevice[]>([]);
   const [connectedDevice, setConnectedDevice] = useState<SimpleDevice | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (!isWeb && bleManager.destroy) {
@@ -55,6 +79,9 @@ const useBLE = () => {
     };
   }, [bleManager, isWeb]);
 
+  /**
+   * Request Android 31+ permissions (BLUETOOTH_SCAN, BLUETOOTH_CONNECT, ACCESS_FINE_LOCATION)
+   */
   const requestAndroid31Permissions = async () => {
     if (isWeb) return true;
 
@@ -62,8 +89,8 @@ const useBLE = () => {
       const bluetoothScanPermission = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
         {
-          title: "Location Permission",
-          message: "Bluetooth Low Energy requires Location",
+          title: "Bluetooth Permission",
+          message: "App needs Bluetooth permissions to connect to Aurora Board",
           buttonPositive: "OK",
         }
       );
@@ -71,8 +98,8 @@ const useBLE = () => {
       const bluetoothConnectPermission = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
         {
-          title: "Location Permission",
-          message: "Bluetooth Low Energy requires Location",
+          title: "Bluetooth Permission",
+          message: "App needs Bluetooth permissions to connect to Aurora Board",
           buttonPositive: "OK",
         }
       );
@@ -81,7 +108,7 @@ const useBLE = () => {
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
           title: "Location Permission",
-          message: "Bluetooth Low Energy requires Location",
+          message: "Bluetooth requires location permission on Android",
           buttonPositive: "OK",
         }
       );
@@ -97,17 +124,21 @@ const useBLE = () => {
     }
   };
 
+  /**
+   * Request appropriate permissions based on platform and API level
+   */
   const requestPermissions = async () => {
     if (isWeb) return true;
     
     if (Platform.OS === "android") {
       if ((DeviceExpo.platformApiLevel ?? -1) < 31) {
+        // For Android versions below 31, only location permission is needed
         try {
           const granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
               title: "Location Permission",
-              message: "Bluetooth Low Energy requires Location",
+              message: "Required to scan for Aurora Board",
               buttonPositive: "OK",
             }
           );
@@ -117,12 +148,19 @@ const useBLE = () => {
           return false;
         }
       } else {
+        // For Android 31+ we need the new Bluetooth permissions
         return await requestAndroid31Permissions();
       }
     }
+    
+    // iOS doesn't require runtime permissions for Bluetooth
     return true;
   };
 
+  /**
+   * Scan for nearby Aurora Boards
+   * Filters devices by Aurora advertising UUID
+   */
   const scanDevices = useCallback(async () => {
     if (isWeb || bleManager.isMock) {
       console.log("BLE scanning not available");
@@ -136,31 +174,44 @@ const useBLE = () => {
       setIsScanning(true);
       setDevices([]);
 
-      bleManager.startDeviceScan(null, null, (error: any, device: SimpleDevice) => {
+      // Start scanning with Aurora advertising UUID filter
+      bleManager.startDeviceScan([AURORA_ADVERTISING_UUID], null, (error: any, device: SimpleDevice) => {
         if (error) {
           console.error("Scan error:", error);
           setIsScanning(false);
           return;
         }
 
+        // Only show devices with names
         if (device?.name) {
           setDevices(prevDevices => {
+            // Avoid duplicates
             const deviceExists = prevDevices.some(d => d.id === device.id);
-            return deviceExists ? prevDevices : [...prevDevices, device];
+            return deviceExists ? prevDevices : [...prevDevices, {
+              id: device.id,
+              name: device.name,
+              serviceUUIDs: device.serviceUUIDs
+            }];
           });
         }
       });
 
+      // Stop scanning after 10 seconds
       setTimeout(() => {
         bleManager.stopDeviceScan();
         setIsScanning(false);
-      }, 5000);
+      }, 10000);
+
     } catch (error) {
       console.error("Failed to scan devices:", error);
       setIsScanning(false);
     }
   }, [isWeb, bleManager]);
 
+  /**
+   * Connect to a specific Aurora Board
+   * @param device The device to connect to
+   */
   const connectToDevice = useCallback(async (device: SimpleDevice) => {
     if (isWeb || bleManager.isMock) {
       console.log("BLE connection not available");
@@ -169,9 +220,18 @@ const useBLE = () => {
 
     try {
       setIsConnecting(true);
-      const deviceConnection = await bleManager.connectToDevice(device.id);
+      
+      // 1. Connect to the device with timeout
+      const deviceConnection = await bleManager.connectToDevice(device.id, {
+        timeout: 15000 // 15 seconds timeout
+      });
+      
+      // 2. Discover services and characteristics
       await deviceConnection.discoverAllServicesAndCharacteristics();
+      
+      // 3. Set as connected device
       setConnectedDevice(deviceConnection);
+      
       return deviceConnection;
     } catch (error) {
       console.error("Connection error:", error);
@@ -181,6 +241,9 @@ const useBLE = () => {
     }
   }, [isWeb, bleManager]);
 
+  /**
+   * Disconnect from the current device
+   */
   const disconnectFromDevice = useCallback(async () => {
     if (isWeb || bleManager.isMock || !connectedDevice) return;
 
@@ -192,6 +255,11 @@ const useBLE = () => {
     }
   }, [connectedDevice, isWeb, bleManager]);
 
+  /**
+   * Send data to the connected Aurora Board
+   * @param data The data to send (hex string)
+   * Data will be split into 20-byte chunks as required by Aurora Board
+   */
   const sendData = useCallback(async (data: string) => {
     if (isWeb || bleManager.isMock) {
       console.log("BLE data sending not available");
@@ -204,18 +272,43 @@ const useBLE = () => {
 
     try {
       setIsSending(true);
-      const buffer = Buffer.from(data, "utf-8");
-      const base64Value = buffer.toString("base64");
+      
+      // 1. Validate and clean the hex code
+      const cleanedCode = data.replace(/[^0-9A-Fa-f]/g, '');
+      if (cleanedCode.length === 0) {
+        throw new Error("Invalid hex data");
+      }
 
-      await bleManager.writeCharacteristicWithResponseForDevice(
-        connectedDevice.id,
-        SERVICE_UUID,
-        CHARACTERISTIC_UUID,
-        base64Value
-      );
+      // 2. Split into 20-byte chunks (40 hex characters)
+      const chunkSize = 40;
+      const chunks = [];
+      for (let i = 0; i < cleanedCode.length; i += chunkSize) {
+        chunks.push(cleanedCode.substr(i, chunkSize));
+      }
+
+      // 3. Send each chunk sequentially
+      for (const chunk of chunks) {
+        const buffer = Buffer.from(chunk, 'hex');
+        const base64Value = buffer.toString('base64');
+
+        await bleManager.writeCharacteristicWithResponseForDevice(
+          connectedDevice.id,
+          AURORA_SERVICE_UUID,
+          AURORA_WRITE_CHARACTERISTIC_UUID,
+          base64Value
+        );
+        
+        // Small delay between chunks
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
       return true;
     } catch (error) {
-      console.error("Failed to send data:", error);
+      console.error("Failed to send data to Aurora Board:", {
+        error,
+        data,
+        connectedDevice: connectedDevice?.name
+      });
       throw error;
     } finally {
       setIsSending(false);
